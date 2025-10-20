@@ -2,7 +2,7 @@
 <schemalist gettext-domain="emoji-picker">
   <schema id="org.gnome.shell.extensions.emoji-picker" path="/org/gnome/shell/extensions/emoji-picker/">
     <key name="emoji-keybinding" type="as">
-      <default>['&lt;Super&gt;period']</default>
+      <default>['&lt;Super&gt;comma']</default>
       <summary>Toggle emoji picker</summary>
       <description>Keyboard shortcut to toggle the emoji picker popup</description>
     </key>

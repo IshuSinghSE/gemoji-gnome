@@ -1,8 +1,13 @@
-/* Base */
-.emoji-picker-base {
+/* Base popup layout */
+.emoji-picker-popup {
     min-width: 360px;
     max-width: 520px;
-    padding: 8px;
+    padding: 12px;
+    border-radius: 16px;
+}
+
+.emoji-picker-base {
+    padding: 0;
 }
 
 /* Custom aesthetic theme */
@@ -20,16 +25,11 @@
     border-radius: 10px;
     padding: 8px 12px;
     margin-bottom: 8px;
+    border: 1px solid transparent;
 }
 
 .emoji-scroll {
     max-height: 320px;
-}
-
-.emoji-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
 }
 
 .emoji-button {
@@ -38,6 +38,40 @@
     border-radius: 8px;
     background: transparent;
     font-size: 20px;
+    padding: 4px;
+    transition: background-color 120ms ease;
+}
+
+.emoji-button:hover,
+.emoji-button:focus {
+    background-color: rgba(255,255,255,0.12);
+}
+
+.emoji-category-scroll {
+    max-height: 52px;
+}
+
+.emoji-category-bar {
+    padding: 4px 0;
+}
+
+.emoji-category-button {
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 10px;
+    background: transparent;
+    font-size: 18px;
+    padding: 6px;
+    transition: background-color 120ms ease;
+}
+
+.emoji-category-button:hover,
+.emoji-category-button:focus {
+    background-color: rgba(255,255,255,0.08);
+}
+
+.emoji-category-button.active {
+    background-color: rgba(255,255,255,0.18);
 }
 
 /* Native theme: no colors, let the Shell style it */
