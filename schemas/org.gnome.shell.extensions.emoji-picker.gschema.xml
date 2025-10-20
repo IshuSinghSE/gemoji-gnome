@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="emoji-picker">
+  <schema id="org.gnome.shell.extensions.emoji-picker" path="/org/gnome/shell/extensions/emoji-picker/">
+    <key name="emoji-keybinding" type="as">
+      <default>['&lt;Super&gt;period']</default>
+      <summary>Toggle emoji picker</summary>
+      <description>Keyboard shortcut to toggle the emoji picker popup</description>
+    </key>
+    <key name="use-custom-theme" type="b">
+      <default>true</default>
+      <summary>Use custom theme</summary>
+      <description>Use custom theme (true) or native GNOME Shell theme (false)</description>
+    </key>
+  </schema>
+</schemalist>
