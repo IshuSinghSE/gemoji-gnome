@@ -25,6 +25,7 @@ import { SearchManager } from './core/searchManager.js';
 import { CategoryManager } from './core/categoryManager.js';
 import { EmojiRenderer } from './core/emojiRenderer.js';
 import { ClipboardManager } from './core/clipboardManager.js';
+import { PopupSizeManager } from './core/popupSizeManager.js';
 
 /**
  * Extension entry point
@@ -76,13 +77,24 @@ export default class EmojiPickerExtension extends Extension {
     /** @type {ClipboardManager|null} */
     #clipboardManager = null;
 
+    /** @type {PopupSizeManager|null} */
+    #popupSizeManager = null;
+
     /**
      * Get popup dimensions based on size mode
      * @returns {{width: number, height: number}}
      */
     #getPopupDimensions() {
-        const sizeMode = this.#settings.get_string('popup-size-mode') || 'default';
+        if (this.#popupSizeManager) {
+            const dims = this.#popupSizeManager.getDimensions();
+            return {
+                width: dims.width,
+                height: dims.height
+            };
+        }
         
+        // Fallback if manager not initialized
+        const sizeMode = this.#settings.get_string('popup-size-mode') || 'default';
         if (sizeMode === 'custom') {
             return {
                 width: this.#settings.get_int('popup-width'),
@@ -107,6 +119,10 @@ export default class EmojiPickerExtension extends Extension {
         // Initialize modules
         this.#usageTracker = new UsageTracker(this.#settings);
         this.#clipboardManager = new ClipboardManager(this.#settings);
+        this.#popupSizeManager = new PopupSizeManager(
+            this.#settings,
+            (dimensions) => this.#onPopupSizeChange(dimensions)
+        );
         this.#keybindingManager = new KeybindingManager(
             this.#settings,
             'emoji-keybinding',
@@ -148,6 +164,11 @@ export default class EmojiPickerExtension extends Extension {
         if (this.#keybindingManager) {
             this.#keybindingManager.unregister();
             this.#keybindingManager = null;
+        }
+
+        if (this.#popupSizeManager) {
+            this.#popupSizeManager.destroy();
+            this.#popupSizeManager = null;
         }
 
         // Cleanup UI
@@ -259,6 +280,9 @@ export default class EmojiPickerExtension extends Extension {
             x_expand: true,
         });
 
+        // Apply layout class based on emojis per row
+        this.#emojiGrid.add_style_class_name(`emoji-layout-${dimensions.emojisPerRow}`);
+
         this.#scrollView.set_child(this.#emojiGrid);
 
         // Initialize category manager
@@ -282,10 +306,15 @@ export default class EmojiPickerExtension extends Extension {
             this.#applyFilter(query);
         });
 
-        // Initialize emoji renderer
-        this.#emojiRenderer = new EmojiRenderer(this.#emojiGrid, (item) => {
-            this.#handleEmojiSelected(item);
-        });
+        // Initialize emoji renderer with dynamic emojis per row
+        const popupDims = this.#getPopupDimensions();
+        this.#emojiRenderer = new EmojiRenderer(
+            this.#emojiGrid,
+            (item) => {
+                this.#handleEmojiSelected(item);
+            },
+            popupDims.emojisPerRow
+        );
 
         // Build layout
         container.add_child(categoryTabs);
@@ -367,6 +396,24 @@ export default class EmojiPickerExtension extends Extension {
                 this.#categoryManager.registerSection(category, section);
             }
         );
+    }
+
+    /**
+     * Handle popup size change
+     * When user changes size mode, rebuild the popup
+     *
+     * @param {{width: number, height: number}} dimensions
+     */
+    #onPopupSizeChange(dimensions) {
+        log(`emoji-picker: Popup size changed to ${dimensions.width}x${dimensions.height}, emojis per row: ${dimensions.emojisPerRow}`);
+        if (this.#popup) {
+            this.#destroyPopup();
+            this.#buildPopup();
+            
+            // Apply the appropriate emoji layout CSS class based on emojis per row
+            const layoutClass = `emoji-layout-${dimensions.emojisPerRow}`;
+            this.#emojiGrid.add_style_class_name(layoutClass);
+        }
     }
 
     /**

@@ -13,14 +13,17 @@ import { EMOJIS_PER_ROW } from './constants.js';
 export class EmojiRenderer {
     #emojiGrid;
     #onEmojiSelectedCallback;
+    #emojisPerRow;
 
     /**
      * @param {St.BoxLayout} emojiGrid
      * @param {Function} onEmojiSelectedCallback - Called when emoji is selected
+     * @param {number} emojisPerRow - Number of emojis per row (default 10)
      */
-    constructor(emojiGrid, onEmojiSelectedCallback) {
+    constructor(emojiGrid, onEmojiSelectedCallback, emojisPerRow = EMOJIS_PER_ROW) {
         this.#emojiGrid = emojiGrid;
         this.#onEmojiSelectedCallback = onEmojiSelectedCallback;
+        this.#emojisPerRow = emojisPerRow;
     }
 
     /**
@@ -54,8 +57,8 @@ export class EmojiRenderer {
         let emojiCount = 0;
 
         for (const item of emojis) {
-            // Create a new row every EMOJIS_PER_ROW emojis
-            if (emojiCount % EMOJIS_PER_ROW === 0) {
+            // Create a new row every emojisPerRow emojis
+            if (emojiCount % this.#emojisPerRow === 0) {
                 currentRow = new St.BoxLayout({
                     vertical: false,
                     style_class: 'emoji-row',
@@ -143,7 +146,7 @@ export class EmojiRenderer {
             let emojiCount = 0;
 
             for (const item of emojis) {
-                if (emojiCount % EMOJIS_PER_ROW === 0) {
+                if (emojiCount % this.#emojisPerRow === 0) {
                     currentRow = new St.BoxLayout({
                         vertical: false,
                         style_class: 'emoji-row',

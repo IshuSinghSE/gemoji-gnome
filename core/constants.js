@@ -10,7 +10,7 @@ export const MAX_VISIBLE_EMOJIS = 360;
 export const SEARCH_DEBOUNCE_MS = 120;
 export const POPUP_WIDTH = 420;
 export const POPUP_HEIGHT = 600;
-export const EMOJIS_PER_ROW = 10;
+export const EMOJIS_PER_ROW = 11;
 export const CATEGORY_SCROLL_THRESHOLD = 30;
 export const CATEGORY_SCROLL_DELAY = 50;
 
@@ -25,7 +25,7 @@ export const POPUP_SIZE_MODES = {
     default: {
         width: 480,
         height: 360,
-        emojisPerRow: 8,
+        emojisPerRow: 11,
         label: 'Default'
     },
     comfortable: {
