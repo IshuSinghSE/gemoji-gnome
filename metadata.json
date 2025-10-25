@@ -4,7 +4,7 @@
   "shell-version": ["45", "46", "47", "48", "49"],
   "settings-schema": "org.gnome.shell.extensions.emoji-picker",
   "gettext-domain": "emoji-picker",
-  "url": "https://example.local/emoji-picker",
+  "url": "https://github.com/IshuSinghSE/emoji-picker",
   "uuid": "emoji-picker@local",
   "version": 1
 }
