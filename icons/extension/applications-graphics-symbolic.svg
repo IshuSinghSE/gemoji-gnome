@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+    <g fill="#2e3436">
+        <!-- Palette shape representing graphics/appearance -->
+        <path d="M8 1a7 7 0 0 0-7 7 7 7 0 0 0 7 7 7 7 0 0 0 7-7 7 7 0 0 0-7-7zm0 2a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5z" style="opacity:0.3"/>
+        <!-- Color swatches on palette -->
+        <circle cx="4" cy="5" r="1.2" style="fill:#e74c3c"/>
+        <circle cx="7" cy="4" r="1.2" style="fill:#3498db"/>
+        <circle cx="10" cy="5" r="1.2" style="fill:#2ecc71"/>
+        <circle cx="11" cy="8" r="1.2" style="fill:#f39c12"/>
+        <circle cx="10" cy="11" r="1.2" style="fill:#9b59b6"/>
+        <circle cx="7" cy="12" r="1.2" style="fill:#1abc9c"/>
+        <circle cx="4" cy="11" r="1.2" style="fill:#e67e22"/>
+        <circle cx="3" cy="8" r="1.2" style="fill:#34495e"/>
+    </g>
+</svg>
