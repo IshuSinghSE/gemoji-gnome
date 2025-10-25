@@ -43,7 +43,25 @@ function loadEmojiJson(file) {
     const data = JSON.parse(text);
 
     return data
-        .filter(entry => entry && entry.emoji)
+        .filter(entry => {
+            if (!entry || !entry.emoji) return false;
+            
+            // Filter out problematic characters
+            const emoji = entry.emoji;
+            
+            // Skip if it's just a variation selector or combining character
+            if (emoji.length === 1 && emoji.charCodeAt(0) >= 0xFE00 && emoji.charCodeAt(0) <= 0xFE0F) {
+                return false;
+            }
+            
+            // Skip zero-width joiner by itself
+            if (emoji === '\u200D') return false;
+            
+            // Skip replacement character
+            if (emoji === '\uFFFD' || emoji.includes('\uFFFD')) return false;
+            
+            return true;
+        })
         .map(entry => ({
             emoji: entry.emoji,
             description: entry.description ?? '',
@@ -105,11 +123,30 @@ function getFallbackEmojiData() {
  * @returns {Array<string>}
  */
 export function collectCategories(emojiData) {
-    const categories = new Set();
+    // Predefined order for categories
+    const orderedCategories = [
+        'Frequently Used',
+        'Smileys & Emotion',
+        'People & Body',
+        'Animals & Nature',
+        'Food & Drink',
+        'Travel & Places',
+        'Activities',
+        'Objects',
+        'Symbols',
+        'Flags'
+    ];
+    
+    // Collect actual categories from data
+    const categoriesInData = new Set();
     for (const entry of emojiData) {
         if (entry.category) {
-            categories.add(entry.category);
+            categoriesInData.add(entry.category);
         }
     }
-    return ['Frequently Used', ...Array.from(categories)];
+    
+    // Return only categories that exist in data, in predefined order
+    return orderedCategories.filter(cat => 
+        cat === 'Frequently Used' || categoriesInData.has(cat)
+    );
 }

@@ -8,6 +8,7 @@
  */
 
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import St from 'gi://St';
 import { CATEGORY_ICONS, CATEGORY_SCROLL_THRESHOLD, CATEGORY_SCROLL_DELAY } from './constants.js';
 
@@ -18,6 +19,7 @@ export class CategoryManager {
     #scrollView;
     #scrollAdjustment;
     #onCategoryChangeCallback;
+    #programmaticScroll; // Flag to prevent scroll listener during programmatic scroll
 
     /**
      * @param {St.ScrollView} scrollView
@@ -30,6 +32,7 @@ export class CategoryManager {
         this.#categorySections = new Map();
         this.#currentCategory = 'Frequently Used';
         this.#scrollAdjustment = null;
+        this.#programmaticScroll = false;
 
         this.#setupScrollListener();
     }
@@ -75,6 +78,11 @@ export class CategoryManager {
      * Handle scroll events to update active category
      */
     #onScroll() {
+        // Skip during programmatic scrolling
+        if (this.#programmaticScroll) {
+            return;
+        }
+
         if (!this.#scrollView || !this.#scrollAdjustment) {
             return;
         }
@@ -118,18 +126,27 @@ export class CategoryManager {
      * @returns {St.BoxLayout}
      */
     buildCategoryTabs(categories, extensionDir) {
+        log(`emoji-picker: buildCategoryTabs called with ${categories.length} categories: ${JSON.stringify(categories)}`);
         const tabBox = new St.BoxLayout({
             style_class: 'emoji-category-tabs',
             x_expand: true,
         });
 
-        for (const category of categories) {
-            const iconName = this.#getCategoryIconName(category);
-            const iconPath = extensionDir.get_child('icons').get_child(`${iconName}.svg`).get_path();
+        log(`emoji-picker: tabBox created, initial children count: ${tabBox.get_n_children()}`);
 
+        for (const category of categories) {
+            log(`emoji-picker: Creating tab for category: ${category}`);
+            const iconName = this.#getCategoryIconName(category);
+            log(`emoji-picker: Icon name: ${iconName}`);
+            const iconFile = extensionDir.get_child('icons').get_child(`${iconName}.svg`);
+            const iconPath = iconFile.get_path();
+            log(`emoji-picker: Icon path: ${iconPath}`);
+
+            // Load icon directly from file to avoid theme cache issues
+            const gicon = Gio.FileIcon.new(iconFile);
             const icon = new St.Icon({
                 style_class: 'emoji-category-icon',
-                icon_name: iconName,
+                gicon: gicon,
                 icon_size: 18,
             });
 
@@ -140,13 +157,18 @@ export class CategoryManager {
                 track_hover: true,
             });
 
-            button.connect('clicked', () => this.setCategory(category));
+            button.connect('clicked', () => {
+                log(`emoji-picker: Button clicked for category: "${category}"`);
+                this.setCategory(category);
+            });
 
             this.#categoryButtons.set(category, button);
             tabBox.add_child(button);
+            log(`emoji-picker: Added button for "${category}", tabBox now has ${tabBox.get_n_children()} children`);
         }
 
         this.updateCategoryStates();
+        log(`emoji-picker: Final tabBox children count: ${tabBox.get_n_children()}`);
         return tabBox;
     }
 
@@ -166,7 +188,10 @@ export class CategoryManager {
      * @param {string} category
      */
     setCategory(category) {
+        log(`emoji-picker: setCategory called with: "${category}"`);
+        log(`emoji-picker: Previous currentCategory: "${this.#currentCategory}"`);
         this.#currentCategory = category;
+        log(`emoji-picker: New currentCategory: "${this.#currentCategory}"`);
         this.updateCategoryStates();
         
         // Scroll to the category section after a small delay to ensure layout is ready
@@ -206,8 +231,11 @@ export class CategoryManager {
      * Update category button states (visual highlighting)
      */
     updateCategoryStates() {
+        log(`emoji-picker: updateCategoryStates - highlighting category: "${this.#currentCategory}"`);
+        log(`emoji-picker: Available category buttons: ${Array.from(this.#categoryButtons.keys()).join(', ')}`);
         for (const [category, button] of this.#categoryButtons) {
             if (category === this.#currentCategory) {
+                log(`emoji-picker: Adding 'active' class to: "${category}"`);
                 button.add_style_class_name('active');
             } else {
                 button.remove_style_class_name('active');

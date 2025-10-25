@@ -30,7 +30,7 @@ export const CATEGORIES = [
 export const CATEGORY_ICONS = {
     'Frequently Used': 'emoji-recent-symbolic',
     'Smileys & Emotion': 'emoji-smileys-symbolic',
-    'People & Body': 'emoji-people-symbolic',
+    'People & Body': 'emoji-body-symbolic',
     'Animals & Nature': 'emoji-nature-symbolic',
     'Food & Drink': 'emoji-food-symbolic',
     'Travel & Places': 'emoji-travel-symbolic',

@@ -35,7 +35,12 @@ export class SearchManager {
             return;
         }
 
-        this.#searchEntry.connect('text-changed', () => this.queueFilter());
+        // Use notify::text instead of text-changed for GNOME 48+
+        const clutterText = this.#searchEntry.get_clutter_text();
+        if (clutterText) {
+            clutterText.connect('text-changed', () => this.queueFilter());
+        }
+        
         this.#searchEntry.connect('key-press-event', (actor, event) => {
             const symbol = event.get_key_symbol();
             if (symbol === 65307) { // Escape
