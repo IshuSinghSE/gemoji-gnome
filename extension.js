@@ -78,6 +78,9 @@ export default class EmojiPickerExtension extends Extension {
     /** @type {string} */
     #currentCategory = 'Smileys & Emotion';
 
+    /** @type {Map<string, number>} */
+    #emojiUsageCount = new Map();
+
     /** @type {number} */
     #searchTimeoutId = 0;
 
@@ -96,6 +99,7 @@ export default class EmojiPickerExtension extends Extension {
         this.#settings = this.getSettings();
         this.#clipboard = St.Clipboard.get_default();
         this.#emojiData = this.#loadEmojiData();
+        this.#loadUsageData();
         
         Main.notify('Emoji Picker', `Loaded ${this.#emojiData.length} emojis`);
 
@@ -322,6 +326,21 @@ export default class EmojiPickerExtension extends Extension {
 
         this.#categoryButtons.clear();
 
+        // Add "Frequently Used" tab first
+        const frequentButton = new St.Button({
+            style_class: 'emoji-category-tab',
+            label: '🕒',
+            can_focus: true,
+        });
+        
+        if (typeof frequentButton.set_tooltip_text === 'function') {
+            frequentButton.set_tooltip_text('Frequently Used');
+        }
+        
+        frequentButton.connect('clicked', () => this.#setCategory('Frequently Used'));
+        this.#categoryButtons.set('Frequently Used', frequentButton);
+        tabBar.add_child(frequentButton);
+
         for (const category of categories) {
             const button = new St.Button({
                 style_class: 'emoji-category-tab',
@@ -391,6 +410,74 @@ export default class EmojiPickerExtension extends Extension {
     }
 
     /**
+     * Load usage data from persistent storage
+     *
+     * @returns {void}
+     */
+    #loadUsageData() {
+        try {
+            const usageJson = this.#settings.get_string('emoji-usage-counts');
+            if (usageJson) {
+                const usageObj = JSON.parse(usageJson);
+                this.#emojiUsageCount = new Map(Object.entries(usageObj));
+            }
+        } catch (e) {
+            log(`Failed to load emoji usage data: ${e}`);
+            this.#emojiUsageCount = new Map();
+        }
+    }
+
+    /**
+     * Save usage data to persistent storage
+     *
+     * @returns {void}
+     */
+    #saveUsageData() {
+        try {
+            const usageObj = Object.fromEntries(this.#emojiUsageCount);
+            const usageJson = JSON.stringify(usageObj);
+            this.#settings.set_string('emoji-usage-counts', usageJson);
+        } catch (e) {
+            log(`Failed to save emoji usage data: ${e}`);
+        }
+    }
+
+    /**
+     * Get frequently used emojis sorted by usage count
+     *
+     * @returns {Array<{emoji: string, description: string, category: string, aliases: string[], tags: string[]}>}
+     */
+    #getFrequentlyUsed() {
+        // Sort emojis by usage count
+        const sortedEntries = Array.from(this.#emojiUsageCount.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 30); // Top 30 most used
+
+        // Map emoji strings back to full emoji objects
+        const frequentEmojis = [];
+        for (const [emojiChar, count] of sortedEntries) {
+            const emojiObj = this.#emojiData.find(e => e.emoji === emojiChar);
+            if (emojiObj) {
+                frequentEmojis.push(emojiObj);
+            }
+        }
+
+        return frequentEmojis;
+    }
+
+    /**
+     * Track emoji usage
+     *
+     * @param {string} emoji
+     * @returns {void}
+     */
+    #trackEmojiUsage(emoji) {
+        const currentCount = this.#emojiUsageCount.get(emoji) || 0;
+        this.#emojiUsageCount.set(emoji, currentCount + 1);
+        this.#saveUsageData();
+    }
+
+    /**
      * Collect unique categories from emoji data
      *
      * @returns {string[]}
@@ -445,6 +532,13 @@ export default class EmojiPickerExtension extends Extension {
         const results = [];
 
         Main.notify('Debug', `Filtering ${this.#emojiData.length} emojis, cat="${category}", query="${query}"`);
+
+        // Handle "Frequently Used" category
+        if (!query && category === 'Frequently Used') {
+            const frequentEmojis = this.#getFrequentlyUsed();
+            this.#renderEmojis(frequentEmojis);
+            return;
+        }
 
         for (const item of this.#emojiData) {
             // Filter by category if not searching
@@ -547,6 +641,9 @@ export default class EmojiPickerExtension extends Extension {
             this.#clipboard.set_text(St.ClipboardType.CLIPBOARD, item.emoji);
             this.#clipboard.set_text(St.ClipboardType.PRIMARY, item.emoji);
         }
+
+        // Track usage
+        this.#trackEmojiUsage(item.emoji);
 
         Main.notify('Emoji Picker', `${item.emoji} copied to clipboard`);
         this.#togglePopup(true);

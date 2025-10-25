@@ -11,5 +11,10 @@
       <summary>Use custom theme</summary>
       <description>Use custom theme (true) or native GNOME Shell theme (false)</description>
     </key>
+    <key name="emoji-usage-counts" type="s">
+      <default>'{}'</default>
+      <summary>Emoji usage counts</summary>
+      <description>JSON string storing emoji usage frequency for frequently used section</description>
+    </key>
   </schema>
 </schemalist>
