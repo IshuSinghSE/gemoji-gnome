@@ -16,5 +16,20 @@
       <summary>Emoji usage counts</summary>
       <description>JSON string storing emoji usage frequency for frequently used section</description>
     </key>
+    <key name="show-indicator" type="b">
+      <default>true</default>
+      <summary>Show indicator</summary>
+      <description>Whether to show the emoji indicator in the top panel</description>
+    </key>
+    <key name="paste-on-select" type="b">
+      <default>false</default>
+      <summary>Paste on select</summary>
+      <description>Automatically paste the selected emoji at cursor position</description>
+    </key>
+    <key name="use-keybind" type="b">
+      <default>true</default>
+      <summary>Use keybind</summary>
+      <description>Enable your default keybind to open the emoji menu</description>
+    </key>
   </schema>
 </schemalist>

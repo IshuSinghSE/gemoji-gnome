@@ -67,6 +67,14 @@
     padding: 8px;
 }
 
+.emoji-category-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    padding: 12px 8px 8px 8px;
+    margin-top: 4px;
+}
+
 .emoji-row {
     gap: 4px;
     margin-bottom: 4px;

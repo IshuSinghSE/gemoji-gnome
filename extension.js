@@ -81,6 +81,12 @@ export default class EmojiPickerExtension extends Extension {
     /** @type {Map<string, number>} */
     #emojiUsageCount = new Map();
 
+    /** @type {Map<string, St.Widget>} */
+    #categorySections = new Map();
+
+    /** @type {St.ScrollView|null} */
+    #scrollView = null;
+
     /** @type {number} */
     #searchTimeoutId = 0;
 
@@ -100,20 +106,23 @@ export default class EmojiPickerExtension extends Extension {
         this.#clipboard = St.Clipboard.get_default();
         this.#emojiData = this.#loadEmojiData();
         this.#loadUsageData();
-        
-        Main.notify('Emoji Picker', `Loaded ${this.#emojiData.length} emojis`);
 
-        // Create panel button
-        this.#button = new PanelMenu.Button(0.0, this.metadata.uuid);
-        const icon = new St.Icon({
-            icon_name: 'face-smile-symbolic',
-            style_class: 'system-status-icon',
-        });
-        this.#button.add_child(icon);
-        this.#button.connect('button-press-event', () => {
-            this.#togglePopup();
-            return Clutter.EVENT_STOP;
-        });
+        // Create panel button (only if show-indicator is true)
+        if (this.#settings.get_boolean('show-indicator')) {
+            this.#button = new PanelMenu.Button(0.0, this.metadata.uuid);
+            const icon = new St.Icon({
+                icon_name: 'face-smile-symbolic',
+                style_class: 'system-status-icon',
+            });
+            this.#button.add_child(icon);
+            this.#button.connect('button-press-event', () => {
+                this.#togglePopup();
+                return Clutter.EVENT_STOP;
+            });
+
+            // Add button to panel
+            Main.panel.addToStatusArea(this.metadata.uuid, this.#button, 1, 'right');
+        }
 
         this.#popup = this.#buildPopup();
         this.#popup.hide();
@@ -122,16 +131,16 @@ export default class EmojiPickerExtension extends Extension {
             affectsInputRegion: true,
         });
 
-        this.#settingsChangedId = this.#settings.connect('changed::use-custom-theme', () => this.#applyTheme());
+        this.#settingsChangedId = this.#settings.connect('changed', (settings, key) => this.#onSettingsChanged(key));
         this.#applyTheme();
 
-        // Add button to panel
-        Main.panel.addToStatusArea(this.metadata.uuid, this.#button, 1, 'right');
-
-        try {
-            this.#registerKeybinding();
-        } catch (error) {
-            logError(error, 'emoji-picker: failed to register keybinding');
+        // Register keybinding only if use-keybind is true
+        if (this.#settings.get_boolean('use-keybind')) {
+            try {
+                this.#registerKeybinding();
+            } catch (error) {
+                logError(error, 'emoji-picker: failed to register keybinding');
+            }
         }
     }
 
@@ -289,11 +298,46 @@ export default class EmojiPickerExtension extends Extension {
         popup.add_child(this.#searchEntry);
 
         // Emoji grid inside scroll view
-        const scrollView = new St.ScrollView({
+        this.#scrollView = new St.ScrollView({
             style_class: 'emoji-scroll',
             overlay_scrollbars: true,
         });
-        scrollView.set_policy(St.PolicyType.NEVER, St.PolicyType.AUTOMATIC);
+        this.#scrollView.set_policy(St.PolicyType.NEVER, St.PolicyType.AUTOMATIC);
+
+        // Defer attaching scroll listeners until the actor is realized.
+        // Different GNOME Shell versions expose the vertical scrollbar differently,
+        // so try several accessors and fall back to a generic scroll-event.
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            try {
+                let vScroll = null;
+
+                if (this.#scrollView && typeof this.#scrollView.get_vscroll_bar === 'function') {
+                    vScroll = this.#scrollView.get_vscroll_bar();
+                } else if (this.#scrollView && typeof this.#scrollView.get_vscrollbar === 'function') {
+                    vScroll = this.#scrollView.get_vscrollbar();
+                } else if (this.#scrollView && this.#scrollView.vscroll_bar) {
+                    vScroll = this.#scrollView.vscroll_bar;
+                }
+
+                if (vScroll && typeof vScroll.get_adjustment === 'function') {
+                    const adjustment = vScroll.get_adjustment();
+                    if (adjustment && typeof adjustment.connect === 'function') {
+                        adjustment.connect('notify::value', () => this.#onScroll());
+                    }
+                } else if (this.#scrollView && typeof this.#scrollView.connect === 'function') {
+                    // Fallback: connect to scroll-event if scrollbar API isn't available
+                    try {
+                        this.#scrollView.connect('scroll-event', () => this.#onScroll());
+                    } catch (e) {
+                        log(`emoji-picker: failed to attach scroll-event: ${e}`);
+                    }
+                }
+            } catch (e) {
+                log(`emoji-picker: error initializing scroll listener: ${e}`);
+            }
+
+            return GLib.SOURCE_REMOVE;
+        });
 
         // Use a vertical BoxLayout to hold rows of emojis
         this.#emojiGrid = new St.BoxLayout({
@@ -302,13 +346,13 @@ export default class EmojiPickerExtension extends Extension {
         });
 
         // Use add_child for newer GNOME Shell, with fallback to add_actor
-        if (typeof scrollView.add_child === 'function') {
-            scrollView.add_child(this.#emojiGrid);
-        } else if (typeof scrollView.add_actor === 'function') {
-            scrollView.add_actor(this.#emojiGrid);
+        if (typeof this.#scrollView.add_child === 'function') {
+            this.#scrollView.add_child(this.#emojiGrid);
+        } else if (typeof this.#scrollView.add_actor === 'function') {
+            this.#scrollView.add_actor(this.#emojiGrid);
         }
         
-        popup.add_child(scrollView);
+        popup.add_child(this.#scrollView);
         return popup;
     }
 
@@ -391,7 +435,62 @@ export default class EmojiPickerExtension extends Extension {
     #setCategory(category) {
         this.#currentCategory = category;
         this.#updateCategoryStates();
-        this.#queueFilter(true);
+        
+        // Scroll to the category section
+        const section = this.#categorySections.get(category);
+        if (section && this.#scrollView) {
+            const [, categoryY] = section.get_transformed_position();
+            const [, gridY] = this.#emojiGrid.get_transformed_position();
+            const scrollPosition = categoryY - gridY;
+            
+            const vScroll = this.#scrollView.get_vscroll_bar();
+            if (vScroll) {
+                const adjustment = vScroll.get_adjustment();
+                if (adjustment) {
+                    adjustment.set_value(Math.max(0, scrollPosition - 10));
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle scroll events to update active category
+     *
+     * @returns {void}
+     */
+    #onScroll() {
+        if (!this.#scrollView || !this.#emojiGrid) {
+            return;
+        }
+
+        const vScroll = this.#scrollView.get_vscroll_bar();
+        if (!vScroll) return;
+
+        const adjustment = vScroll.get_adjustment();
+        if (!adjustment) return;
+
+        const scrollY = adjustment.get_value();
+        const [, gridY] = this.#emojiGrid.get_transformed_position();
+
+        // Find which category section is currently visible
+        let activeCategory = null;
+        let minDistance = Infinity;
+
+        for (const [category, section] of this.#categorySections.entries()) {
+            const [, sectionY] = section.get_transformed_position();
+            const relativeSectionY = sectionY - gridY;
+            const distance = Math.abs(scrollY - relativeSectionY);
+
+            if (relativeSectionY <= scrollY + 50 && distance < minDistance) {
+                minDistance = distance;
+                activeCategory = category;
+            }
+        }
+
+        if (activeCategory && activeCategory !== this.#currentCategory) {
+            this.#currentCategory = activeCategory;
+            this.#updateCategoryStates();
+        }
     }
 
     /**
@@ -523,30 +622,15 @@ export default class EmojiPickerExtension extends Extension {
      */
     #applyFilter() {
         if (!this.#emojiGrid) {
-            Main.notify('Debug', 'No emoji grid in filter');
             return;
         }
 
         const query = this.#getSearchQuery();
-        const category = this.#currentCategory;
-        const results = [];
 
-        Main.notify('Debug', `Filtering ${this.#emojiData.length} emojis, cat="${category}", query="${query}"`);
-
-        // Handle "Frequently Used" category
-        if (!query && category === 'Frequently Used') {
-            const frequentEmojis = this.#getFrequentlyUsed();
-            this.#renderEmojis(frequentEmojis);
-            return;
-        }
-
-        for (const item of this.#emojiData) {
-            // Filter by category if not searching
-            if (!query && category && item.category !== category) {
-                continue;
-            }
-
-            if (query) {
+        // If searching, show filtered results without category headers
+        if (query) {
+            const results = [];
+            for (const item of this.#emojiData) {
                 const fields = [
                     item.emoji,
                     item.description,
@@ -557,19 +641,108 @@ export default class EmojiPickerExtension extends Extension {
                     .join(' ')
                     .toLowerCase();
 
-                if (!fields.includes(query)) {
-                    continue;
+                if (fields.includes(query)) {
+                    results.push(item);
+                    if (results.length >= MAX_VISIBLE_EMOJIS) {
+                        break;
+                    }
                 }
             }
+            this.#renderEmojis(results);
+            return;
+        }
 
-            results.push(item);
-            if (results.length >= MAX_VISIBLE_EMOJIS) {
-                break;
+        // If not searching, show all emojis grouped by category with headers
+        this.#renderEmojisByCategory();
+    }
+
+    /**
+     * Render emojis grouped by category with headers (like EmojiMart)
+     *
+     * @returns {void}
+     */
+    #renderEmojisByCategory() {
+        if (!this.#emojiGrid) {
+            return;
+        }
+
+        // Clear existing content
+        const children = this.#emojiGrid.get_children();
+        for (const child of children) {
+            this.#emojiGrid.remove_child(child);
+            child.destroy();
+        }
+
+        // Clear category section references
+        this.#categorySections.clear();
+
+        const EMOJIS_PER_ROW = 10;
+
+        // Group emojis by category
+        const categorizedEmojis = new Map();
+        
+        // Add frequently used first
+        const frequentEmojis = this.#getFrequentlyUsed();
+        if (frequentEmojis.length > 0) {
+            categorizedEmojis.set('Frequently Used', frequentEmojis);
+        }
+
+        // Group other emojis by their category
+        for (const item of this.#emojiData) {
+            const category = item.category || 'Other';
+            if (!categorizedEmojis.has(category)) {
+                categorizedEmojis.set(category, []);
+            }
+            categorizedEmojis.get(category).push(item);
+        }
+
+        // Render each category with header
+        for (const [category, emojis] of categorizedEmojis.entries()) {
+            if (emojis.length === 0) continue;
+
+            // Add category header
+            const header = new St.Label({
+                text: category,
+                style_class: 'emoji-category-header',
+                x_expand: true,
+            });
+            this.#emojiGrid.add_child(header);
+            
+            // Store reference to this category section
+            this.#categorySections.set(category, header);
+
+            // Add emojis in rows
+            let currentRow = null;
+            let emojiCount = 0;
+
+            for (const item of emojis) {
+                if (emojiCount % EMOJIS_PER_ROW === 0) {
+                    currentRow = new St.BoxLayout({
+                        vertical: false,
+                        style_class: 'emoji-row',
+                        x_expand: true,
+                    });
+                    this.#emojiGrid.add_child(currentRow);
+                }
+
+                const button = new St.Button({
+                    style_class: 'emoji-button',
+                    label: item.emoji,
+                    can_focus: true,
+                    x_expand: false,
+                    y_expand: false,
+                });
+
+                button.set_accessible_name(item.description ?? item.emoji);
+                button.connect('clicked', () => this.#handleEmojiSelected(item));
+
+                currentRow.add_child(button);
+                emojiCount++;
             }
         }
 
-        Main.notify('Debug', `Rendering ${results.length} emojis`);
-        this.#renderEmojis(results);
+        this.#emojiGrid.show();
+        this.#emojiGrid.queue_relayout();
     }
 
     /**
@@ -580,11 +753,8 @@ export default class EmojiPickerExtension extends Extension {
      */
     #renderEmojis(results) {
         if (!this.#emojiGrid) {
-            Main.notify('Debug', 'No emoji grid');
             return;
         }
-
-        Main.notify('Debug', `Rendering ${results.length} emojis`);
 
         // Properly remove all children first
         const children = this.#emojiGrid.get_children();
@@ -626,8 +796,6 @@ export default class EmojiPickerExtension extends Extension {
         // Force the grid to show and queue a relayout
         this.#emojiGrid.show();
         this.#emojiGrid.queue_relayout();
-        
-        Main.notify('Debug', `Grid has ${this.#emojiGrid.get_n_children()} rows`);
     }
 
     /**
@@ -645,8 +813,148 @@ export default class EmojiPickerExtension extends Extension {
         // Track usage
         this.#trackEmojiUsage(item.emoji);
 
+        // Paste on select if enabled
+        if (this.#settings && this.#settings.get_boolean('paste-on-select')) {
+            this.#pasteEmoji();
+        }
+
         Main.notify('Emoji Picker', `${item.emoji} copied to clipboard`);
         this.#togglePopup(true);
+    }
+
+    /**
+     * Paste emoji at cursor position
+     *
+     * @returns {void}
+     */
+    #pasteEmoji() {
+        try {
+            // Use a small delay to allow the window to be focused
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                try {
+                    // Method 1: Try using xdotool (most reliable)
+                    try {
+                        GLib.spawn_command_line_async('xdotool key --clearmodifiers ctrl+v');
+                        return GLib.SOURCE_REMOVE;
+                    } catch (e) {
+                        // xdotool not available, try virtual keyboard
+                    }
+
+                    // Method 2: Virtual keyboard device
+                    const seat = Clutter.get_default_backend().get_default_seat();
+                    if (seat && typeof seat.create_virtual_device === 'function') {
+                        const virtualDevice = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+                        
+                        // Small delay between key events
+                        const delay = 20;
+                        
+                        // Press Control
+                        virtualDevice.notify_key(
+                            Clutter.get_current_event_time(),
+                            Clutter.KEY_Control_L,
+                            Clutter.KeyState.PRESSED
+                        );
+                        
+                        GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+                            // Press V
+                            virtualDevice.notify_key(
+                                Clutter.get_current_event_time(),
+                                Clutter.KEY_v,
+                                Clutter.KeyState.PRESSED
+                            );
+                            
+                            GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+                                // Release V
+                                virtualDevice.notify_key(
+                                    Clutter.get_current_event_time(),
+                                    Clutter.KEY_v,
+                                    Clutter.KeyState.RELEASED
+                                );
+                                
+                                GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+                                    // Release Control
+                                    virtualDevice.notify_key(
+                                        Clutter.get_current_event_time(),
+                                        Clutter.KEY_Control_L,
+                                        Clutter.KeyState.RELEASED
+                                    );
+                                    return GLib.SOURCE_REMOVE;
+                                });
+                                return GLib.SOURCE_REMOVE;
+                            });
+                            return GLib.SOURCE_REMOVE;
+                        });
+                    }
+                } catch (e) {
+                    log(`emoji-picker: failed to paste emoji: ${e}`);
+                }
+                return GLib.SOURCE_REMOVE;
+            });
+        } catch (e) {
+            log(`emoji-picker: failed to setup paste: ${e}`);
+        }
+    }
+
+    /**
+     * Handle settings changes
+     *
+     * @param {string} key - The settings key that changed
+     * @returns {void}
+     */
+    #onSettingsChanged(key) {
+        // Handle show-indicator changes
+        if (key === 'show-indicator') {
+            const showIndicator = this.#settings.get_boolean('show-indicator');
+            if (showIndicator && !this.#button) {
+                // Create and add button
+                this.#button = new PanelMenu.Button(0.0, this.metadata.uuid);
+                const icon = new St.Icon({
+                    icon_name: 'face-smile-symbolic',
+                    style_class: 'system-status-icon',
+                });
+                this.#button.add_child(icon);
+                this.#button.connect('button-press-event', () => {
+                    this.#togglePopup();
+                    return Clutter.EVENT_STOP;
+                });
+                Main.panel.addToStatusArea(this.metadata.uuid, this.#button, 1, 'right');
+            } else if (!showIndicator && this.#button) {
+                // Remove button
+                this.#button.destroy();
+                this.#button = null;
+            }
+        }
+        
+        // Handle use-keybind changes
+        if (key === 'use-keybind') {
+            const useKeybind = this.#settings.get_boolean('use-keybind');
+            if (useKeybind) {
+                try {
+                    this.#registerKeybinding();
+                } catch (error) {
+                    logError(error, 'emoji-picker: failed to register keybinding');
+                }
+            } else {
+                this.#unregisterKeybinding();
+            }
+        }
+
+        // Handle theme changes
+        if (key === 'use-custom-theme') {
+            this.#applyTheme();
+        }
+
+        // Handle keybinding changes
+        if (key === 'emoji-keybinding') {
+            this.#unregisterKeybinding();
+            if (this.#settings.get_boolean('use-keybind')) {
+                try {
+                    this.#registerKeybinding();
+                } catch (error) {
+                    logError(error, 'emoji-picker: failed to register keybinding');
+                }
+            }
+        }
     }
 
     /**
