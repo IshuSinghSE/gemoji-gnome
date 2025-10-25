@@ -294,47 +294,54 @@ export default class EmojiPickerExtension extends Extension {
         });
         this.#scrollView.set_policy(St.PolicyType.NEVER, St.PolicyType.AUTOMATIC);
 
-        // Defer attaching scroll listeners until the actor is realized.
-        // Different GNOME Shell versions expose the vertical scrollbar differently,
-        // so try several accessors and fall back to a generic scroll-event.
-        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-            try {
-                let vScroll = null;
+        // Connect scroll listener after the widget is realized
+        this.#scrollView.connect('notify::realized', () => {
+            if (this.#scrollView.realized && !this.#scrollAdjustment) {
+                // Try to get the vadjustment directly from the ScrollView
+                if (this.#scrollView.vadjustment) {
+                    this.#scrollAdjustment = this.#scrollView.vadjustment;
+                    this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
+                    log('emoji-picker: Connected to vadjustment');
+                } else {
+                    // Fallback: try various methods to get the scrollbar
+                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+                        try {
+                            let vScroll = null;
 
-                if (this.#scrollView && typeof this.#scrollView.get_vscroll_bar === 'function') {
-                    vScroll = this.#scrollView.get_vscroll_bar();
-                } else if (this.#scrollView && typeof this.#scrollView.get_vscrollbar === 'function') {
-                    vScroll = this.#scrollView.get_vscrollbar();
-                } else if (this.#scrollView && this.#scrollView.vscroll_bar) {
-                    vScroll = this.#scrollView.vscroll_bar;
-                } else if (this.#scrollView && this.#scrollView.vscroll) {
-                    vScroll = this.#scrollView.vscroll;
-                }
+                            if (this.#scrollView && typeof this.#scrollView.get_vscroll_bar === 'function') {
+                                vScroll = this.#scrollView.get_vscroll_bar();
+                            } else if (this.#scrollView && typeof this.#scrollView.get_vscrollbar === 'function') {
+                                vScroll = this.#scrollView.get_vscrollbar();
+                            } else if (this.#scrollView && this.#scrollView.vscroll_bar) {
+                                vScroll = this.#scrollView.vscroll_bar;
+                            } else if (this.#scrollView && this.#scrollView.vscroll) {
+                                vScroll = this.#scrollView.vscroll;
+                            }
 
-                if (vScroll && typeof vScroll.get_adjustment === 'function') {
-                    this.#scrollAdjustment = vScroll.get_adjustment();
-                    if (this.#scrollAdjustment && typeof this.#scrollAdjustment.connect === 'function') {
-                        this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
-                    }
-                } else if (this.#scrollView && typeof this.#scrollView.connect === 'function') {
-                    // Fallback: connect to scroll-event if scrollbar API isn't available
-                    try {
-                        this.#scrollView.connect('scroll-event', () => {
-                            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-                                this.#onScroll();
-                                return GLib.SOURCE_REMOVE;
-                            });
-                            return Clutter.EVENT_PROPAGATE;
-                        });
-                    } catch (e) {
-                        log(`emoji-picker: failed to attach scroll-event: ${e}`);
-                    }
+                            if (vScroll && typeof vScroll.get_adjustment === 'function') {
+                                this.#scrollAdjustment = vScroll.get_adjustment();
+                                if (this.#scrollAdjustment && typeof this.#scrollAdjustment.connect === 'function') {
+                                    this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
+                                    log('emoji-picker: Connected to scroll adjustment via vScroll');
+                                }
+                            } else if (this.#scrollView && typeof this.#scrollView.connect === 'function') {
+                                // Final fallback: connect to scroll-event
+                                this.#scrollView.connect('scroll-event', () => {
+                                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                                        this.#onScroll();
+                                        return GLib.SOURCE_REMOVE;
+                                    });
+                                    return Clutter.EVENT_PROPAGATE;
+                                });
+                                log('emoji-picker: Connected to scroll-event fallback');
+                            }
+                        } catch (e) {
+                            log(`emoji-picker: error initializing scroll listener: ${e}`);
+                        }
+                        return GLib.SOURCE_REMOVE;
+                    });
                 }
-            } catch (e) {
-                log(`emoji-picker: error initializing scroll listener: ${e}`);
             }
-
-            return GLib.SOURCE_REMOVE;
         });
 
         // Use a vertical BoxLayout to hold rows of emojis
@@ -448,14 +455,23 @@ export default class EmojiPickerExtension extends Extension {
         // Scroll to the category section after a small delay to ensure layout is ready
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
             const section = this.#categorySections.get(category);
-            if (section && this.#scrollView && this.#scrollAdjustment) {
+            if (section) {
                 try {
-                    // Get the position of the category header relative to the grid
-                    const allocation = section.get_allocation_box();
-                    const sectionY = allocation.y1;
+                    // Ensure we have the adjustment
+                    if (!this.#scrollAdjustment && this.#scrollView) {
+                        if (this.#scrollView.vadjustment) {
+                            this.#scrollAdjustment = this.#scrollView.vadjustment;
+                        }
+                    }
                     
-                    // Scroll to that position
-                    this.#scrollAdjustment.set_value(Math.max(0, sectionY - 10));
+                    if (this.#scrollAdjustment) {
+                        // Get the position of the category header
+                        const allocation = section.get_allocation_box();
+                        const sectionY = allocation.y1;
+                        
+                        // Scroll to that position
+                        this.#scrollAdjustment.set_value(Math.max(0, sectionY - 10));
+                    }
                 } catch (e) {
                     log(`emoji-picker: error scrolling to category: ${e}`);
                 }
@@ -481,16 +497,22 @@ export default class EmojiPickerExtension extends Extension {
         let minDistance = Infinity;
 
         for (const [category, section] of this.#categorySections.entries()) {
-            const allocation = section.get_allocation_box();
-            const sectionY = allocation.y1;
-            
-            // Check if this section is at or above the current scroll position
-            if (sectionY <= scrollY + 50) {
-                const distance = scrollY - sectionY;
-                if (distance >= 0 && distance < minDistance) {
-                    minDistance = distance;
-                    activeCategory = category;
+            try {
+                const allocation = section.get_allocation_box();
+                const sectionY = allocation.y1;
+                
+                // Check if this section is at or above the current scroll position
+                // Use a 30px threshold to switch categories slightly before reaching the header
+                if (sectionY <= scrollY + 30) {
+                    const distance = scrollY - sectionY;
+                    if (distance >= 0 && distance < minDistance) {
+                        minDistance = distance;
+                        activeCategory = category;
+                    }
                 }
+            } catch (e) {
+                // Skip if allocation fails
+                continue;
             }
         }
 
