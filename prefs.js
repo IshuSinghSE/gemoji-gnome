@@ -116,7 +116,76 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
     _getKeybindLabel(settings) {
         const keybindings = settings.get_strv('emoji-keybinding');
         if (keybindings.length > 0) {
-            return keybindings[0].replace('<Super>', 'Super+').replace('<', '').replace('>', '');
+            let binding = keybindings[0];
+            
+            // Parse and format the keybinding string properly
+            // Handle modifiers: <Control>, <Alt>, <Shift>, <Super>, <Primary>
+            const modifiers = [];
+            
+            // Extract modifiers
+            if (binding.includes('<Primary>') || binding.includes('<Control>')) {
+                modifiers.push('Ctrl');
+                binding = binding.replace('<Primary>', '').replace('<Control>', '');
+            }
+            if (binding.includes('<Alt>')) {
+                modifiers.push('Alt');
+                binding = binding.replace('<Alt>', '');
+            }
+            if (binding.includes('<Shift>')) {
+                modifiers.push('Shift');
+                binding = binding.replace('<Shift>', '');
+            }
+            if (binding.includes('<Super>')) {
+                modifiers.push('Super');
+                binding = binding.replace('<Super>', '');
+            }
+            
+            // Clean up remaining angle brackets and get the key
+            let key = binding.replace(/[<>]/g, '');
+            
+            // Format special key names
+            if (key.startsWith('KEY_')) {
+                key = key.substring(4);
+            }
+            
+            // Capitalize first letter of key if it's a single letter
+            if (key.length === 1) {
+                key = key.toLowerCase();
+            } else {
+                // Handle special keys like "comma", "period", etc.
+                const specialKeys = {
+                    'comma': ',',
+                    'period': '.',
+                    'slash': '/',
+                    'backslash': '\\',
+                    'semicolon': ';',
+                    'apostrophe': "'",
+                    'bracketleft': '[',
+                    'bracketright': ']',
+                    'grave': '`',
+                    'minus': '-',
+                    'equal': '=',
+                    'space': 'Space',
+                    'return': 'Enter',
+                    'backspace': 'Backspace',
+                    'tab': 'Tab',
+                    'escape': 'Esc',
+                };
+                
+                const lowerKey = key.toLowerCase();
+                if (specialKeys[lowerKey]) {
+                    key = specialKeys[lowerKey];
+                } else {
+                    // Capitalize first letter for other keys
+                    key = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+                }
+            }
+            
+            // Combine modifiers and key with '+'
+            if (modifiers.length > 0) {
+                return modifiers.join('+') + '+' + key;
+            }
+            return key;
         }
         return 'Not Set';
     }
