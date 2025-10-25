@@ -72,6 +72,12 @@ export default class EmojiPickerExtension extends Extension {
     /** @type {Clutter.GridLayout|null} */
     #gridLayout = null;
 
+    /** @type {Map<string, St.Button>} */
+    #categoryButtons = new Map();
+
+    /** @type {string} */
+    #currentCategory = 'Smileys & Emotion';
+
     /** @type {number} */
     #searchTimeoutId = 0;
 
@@ -272,6 +278,10 @@ export default class EmojiPickerExtension extends Extension {
             }
         }
 
+        // Category tabs at top
+        const categories = this.#collectCategories();
+        popup.add_child(this.#buildCategoryTabs(categories));
+
         popup.add_child(this.#searchEntry);
 
         // Emoji grid inside scroll view
@@ -296,6 +306,103 @@ export default class EmojiPickerExtension extends Extension {
         
         popup.add_child(scrollView);
         return popup;
+    }
+
+    /**
+     * Build category tabs (like EmojiMart)
+     *
+     * @param {string[]} categories
+     * @returns {St.Widget}
+     */
+    #buildCategoryTabs(categories) {
+        const tabBar = new St.BoxLayout({
+            style_class: 'emoji-category-tabs',
+            x_expand: true,
+        });
+
+        this.#categoryButtons.clear();
+
+        for (const category of categories) {
+            const button = new St.Button({
+                style_class: 'emoji-category-tab',
+                label: this.#getCategoryIcon(category),
+                can_focus: true,
+            });
+            
+            if (typeof button.set_tooltip_text === 'function') {
+                button.set_tooltip_text(category);
+            }
+            
+            button.connect('clicked', () => this.#setCategory(category));
+            this.#categoryButtons.set(category, button);
+            tabBar.add_child(button);
+        }
+
+        this.#updateCategoryStates();
+        return tabBar;
+    }
+
+    /**
+     * Get icon for category
+     *
+     * @param {string} category
+     * @returns {string}
+     */
+    #getCategoryIcon(category) {
+        const icons = {
+            'Smileys & Emotion': '😀',
+            'People & Body': '👋',
+            'Animals & Nature': '🐵',
+            'Food & Drink': '🍎',
+            'Travel & Places': '✈️',
+            'Activities': '⚽',
+            'Objects': '💡',
+            'Symbols': '❤️',
+            'Flags': '🏁',
+        };
+        return icons[category] || '📁';
+    }
+
+    /**
+     * Set active category
+     *
+     * @param {string} category
+     * @returns {void}
+     */
+    #setCategory(category) {
+        this.#currentCategory = category;
+        this.#updateCategoryStates();
+        this.#queueFilter(true);
+    }
+
+    /**
+     * Update category button states
+     *
+     * @returns {void}
+     */
+    #updateCategoryStates() {
+        for (const [category, button] of this.#categoryButtons) {
+            if (category === this.#currentCategory) {
+                button.add_style_class_name('active');
+            } else {
+                button.remove_style_class_name('active');
+            }
+        }
+    }
+
+    /**
+     * Collect unique categories from emoji data
+     *
+     * @returns {string[]}
+     */
+    #collectCategories() {
+        const categories = new Set();
+        for (const item of this.#emojiData) {
+            if (item.category) {
+                categories.add(item.category);
+            }
+        }
+        return Array.from(categories);
     }
 
     /**
@@ -334,11 +441,17 @@ export default class EmojiPickerExtension extends Extension {
         }
 
         const query = this.#getSearchQuery();
+        const category = this.#currentCategory;
         const results = [];
 
-        Main.notify('Debug', `Filtering ${this.#emojiData.length} emojis, query="${query}"`);
+        Main.notify('Debug', `Filtering ${this.#emojiData.length} emojis, cat="${category}", query="${query}"`);
 
         for (const item of this.#emojiData) {
+            // Filter by category if not searching
+            if (!query && category && item.category !== category) {
+                continue;
+            }
+
             if (query) {
                 const fields = [
                     item.emoji,
