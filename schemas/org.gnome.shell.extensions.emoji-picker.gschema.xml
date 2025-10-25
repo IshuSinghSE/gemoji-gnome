@@ -61,15 +61,20 @@
       <summary>Suggestion mode</summary>
       <description>How to suggest emojis: recent, frequent, trending</description>
     </key>
+    <key name="popup-size-mode" type="s">
+      <default>'default'</default>
+      <summary>Popup size mode</summary>
+      <description>Size preset for emoji picker: compact, default, custom</description>
+    </key>
     <key name="popup-width" type="i">
       <default>420</default>
       <summary>Popup width</summary>
-      <description>Width of the emoji picker popup in pixels</description>
+      <description>Width of the emoji picker popup in pixels (used when size-mode is custom)</description>
     </key>
     <key name="popup-height" type="i">
       <default>600</default>
       <summary>Popup height</summary>
-      <description>Height of the emoji picker popup in pixels</description>
+      <description>Height of the emoji picker popup in pixels (used when size-mode is custom)</description>
     </key>
     <key name="skin-tone-location" type="s">
       <default>'search'</default>

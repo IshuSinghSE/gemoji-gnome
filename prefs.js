@@ -189,38 +189,60 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         });
         appearanceGroup.add(emojiStyleRow);
 
-        // Popup Width
+        // Popup Size Mode
+        const sizeModeRow = new Adw.ComboRow({
+            title: 'Popup Size',
+            subtitle: 'Choose size preset or customize',
+            model: new Gtk.StringList({
+                strings: ['Compact', 'Default', 'Comfortable', 'Custom'],
+            }),
+        });
+        const sizeModeValues = ['compact', 'default', 'comfortable', 'custom'];
+        const currentSizeMode = settings.get_string('popup-size-mode') || 'default';
+        sizeModeRow.set_selected(sizeModeValues.indexOf(currentSizeMode));
+        sizeModeRow.connect('notify::selected', () => {
+            const newMode = sizeModeValues[sizeModeRow.get_selected()];
+            settings.set_string('popup-size-mode', newMode);
+            // Show/hide custom size controls
+            widthRow.set_visible(newMode === 'custom');
+            heightRow.set_visible(newMode === 'custom');
+        });
+        appearanceGroup.add(sizeModeRow);
+
+        // Popup Width (only shown in custom mode)
         const widthRow = new Adw.SpinRow({
             title: 'Popup Width',
-            subtitle: 'Width in pixels',
+            subtitle: 'Width in pixels (300-1280)',
             adjustment: new Gtk.Adjustment({
                 lower: 300,
-                upper: 800,
+                upper: 1280,
                 step_increment: 10,
                 page_increment: 50,
                 value: settings.get_int('popup-width'),
             }),
             numeric: true,
             snap_to_ticks: true,
+            visible: currentSizeMode === 'custom',
         });
         widthRow.connect('notify::value', () => {
             settings.set_int('popup-width', Math.round(widthRow.get_value()));
         });
         appearanceGroup.add(widthRow);
 
-        // Popup Height
+        // Popup Height (only shown in custom mode)
         const heightRow = new Adw.SpinRow({
             title: 'Popup Height',
-            subtitle: 'Height in pixels',
+            subtitle: 'Height in pixels (300-720)',
             adjustment: new Gtk.Adjustment({
                 lower: 300,
-                upper: 1000,
+                upper: 720,
                 step_increment: 10,
                 page_increment: 50,
                 value: settings.get_int('popup-height'),
             }),
             numeric: true,
             snap_to_ticks: true,
+            visible: currentSizeMode === 'custom',
         });
         heightRow.connect('notify::value', () => {
             settings.set_int('popup-height', Math.round(heightRow.get_value()));

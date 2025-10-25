@@ -17,7 +17,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 // Import our modules
-import { POPUP_WIDTH, POPUP_HEIGHT } from './core/constants.js';
+import { POPUP_WIDTH, POPUP_HEIGHT, POPUP_SIZE_MODES } from './core/constants.js';
 import { loadEmojiData, collectCategories } from './core/emojiData.js';
 import { UsageTracker } from './core/usageTracker.js';
 import { KeybindingManager } from './core/keybindingManager.js';
@@ -75,6 +75,27 @@ export default class EmojiPickerExtension extends Extension {
 
     /** @type {ClipboardManager|null} */
     #clipboardManager = null;
+
+    /**
+     * Get popup dimensions based on size mode
+     * @returns {{width: number, height: number}}
+     */
+    #getPopupDimensions() {
+        const sizeMode = this.#settings.get_string('popup-size-mode') || 'default';
+        
+        if (sizeMode === 'custom') {
+            return {
+                width: this.#settings.get_int('popup-width'),
+                height: this.#settings.get_int('popup-height')
+            };
+        }
+        
+        const preset = POPUP_SIZE_MODES[sizeMode] || POPUP_SIZE_MODES.default;
+        return {
+            width: preset.width,
+            height: preset.height
+        };
+    }
 
     /**
      * Enable extension
@@ -206,12 +227,15 @@ export default class EmojiPickerExtension extends Extension {
         }
 
         log('emoji-picker: Creating popup container');
+        // Get dimensions based on size mode
+        const dimensions = this.#getPopupDimensions();
+        
         // Create main container
         const container = new St.BoxLayout({
             vertical: true,
             style_class: 'emoji-picker-popup',
-            width: POPUP_WIDTH,
-            height: POPUP_HEIGHT,
+            width: dimensions.width,
+            height: dimensions.height,
         });
 
         // Get categories
