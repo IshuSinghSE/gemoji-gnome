@@ -19,8 +19,10 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const MAX_VISIBLE_EMOJIS = 360;
+const EMOJIS_PER_ROW = 9;
 const SEARCH_DEBOUNCE_MS = 120;
 const POPUP_WIDTH = 420;
+const POPUP_HEIGHT = 600;
 
 const CATEGORY_EMOJI = {
     'Smileys & Emotion': '😀',
@@ -67,11 +69,8 @@ export default class EmojiPickerExtension extends Extension {
     /** @type {St.Widget|null} */
     #emojiGrid = null;
 
-    /** @type {Map<string, St.Button>} */
-    #categoryButtons = new Map();
-
-    /** @type {string} */
-    #currentCategory = 'All';
+    /** @type {Clutter.GridLayout|null} */
+    #gridLayout = null;
 
     /** @type {number} */
     #searchTimeoutId = 0;
@@ -91,6 +90,8 @@ export default class EmojiPickerExtension extends Extension {
         this.#settings = this.getSettings();
         this.#clipboard = St.Clipboard.get_default();
         this.#emojiData = this.#loadEmojiData();
+        
+        Main.notify('Emoji Picker', `Loaded ${this.#emojiData.length} emojis`);
 
         // Create panel button
         this.#button = new PanelMenu.Button(0.0, this.metadata.uuid);
@@ -122,7 +123,6 @@ export default class EmojiPickerExtension extends Extension {
         } catch (error) {
             logError(error, 'emoji-picker: failed to register keybinding');
         }
-        this.#queueFilter(true);
     }
 
     /**
@@ -157,9 +157,9 @@ export default class EmojiPickerExtension extends Extension {
         }
 
         this.#emojiData = [];
-        this.#categoryButtons.clear();
         this.#searchEntry = null;
         this.#emojiGrid = null;
+        this.#gridLayout = null;
         this.#clipboard = null;
     }
 
@@ -234,8 +234,8 @@ export default class EmojiPickerExtension extends Extension {
             y_expand: false,
         });
 
-        popup.set_pivot_point(0.5, 0.0);
-        popup.set_width(POPUP_WIDTH);
+    popup.set_pivot_point(0.5, 0.0);
+    popup.set_size(POPUP_WIDTH, POPUP_HEIGHT);
 
         popup.connect('key-press-event', (_actor, event) => {
             if (event.get_key_symbol() === Clutter.KEY_Escape) {
@@ -263,16 +263,16 @@ export default class EmojiPickerExtension extends Extension {
             if (typeof searchText.connect === 'function') {
                 searchText.connect('text-changed', () => this.#queueFilter());
             }
-        } else {
-            // Fallback: watch notify::text on the entry if the clutter text is not accessible
-            this.#searchEntry.connect?.('notify::text', () => this.#queueFilter());
+        }
+
+        if (!searchText || typeof searchText.connect !== 'function') {
+            if (typeof this.#searchEntry.connect === 'function') {
+                this.#searchEntry.connect('notify::text', () => this.#queueFilter());
+                this.#searchEntry.connect('text-changed', () => this.#queueFilter());
+            }
         }
 
         popup.add_child(this.#searchEntry);
-
-        // Category strip
-        const categories = this.#collectCategories();
-        popup.add_child(this.#buildCategoryBar(categories));
 
         // Emoji grid inside scroll view
         const scrollView = new St.ScrollView({
@@ -281,92 +281,21 @@ export default class EmojiPickerExtension extends Extension {
         });
         scrollView.set_policy(St.PolicyType.NEVER, St.PolicyType.AUTOMATIC);
 
-        const flowLayout = new Clutter.FlowLayout();
-        flowLayout.set_column_spacing(6);
-        flowLayout.set_row_spacing(6);
-
-        this.#emojiGrid = new St.Widget({
-            layout_manager: flowLayout,
+        // Use a vertical BoxLayout to hold rows of emojis
+        this.#emojiGrid = new St.BoxLayout({
+            vertical: true,
             style_class: 'emoji-grid',
-            x_expand: true,
-            y_expand: false,
         });
 
-        scrollView.add_child(this.#emojiGrid);
+        // Use add_child for newer GNOME Shell, with fallback to add_actor
+        if (typeof scrollView.add_child === 'function') {
+            scrollView.add_child(this.#emojiGrid);
+        } else if (typeof scrollView.add_actor === 'function') {
+            scrollView.add_actor(this.#emojiGrid);
+        }
+        
         popup.add_child(scrollView);
-
         return popup;
-    }
-
-    /**
-     * Build horizontal category bar
-     *
-     * @param {string[]} categories
-     * @returns {St.Widget}
-     */
-    #buildCategoryBar(categories) {
-        const scroll = new St.ScrollView({
-            style_class: 'emoji-category-scroll',
-            overlay_scrollbars: false,
-        });
-        scroll.set_policy(St.PolicyType.AUTOMATIC, St.PolicyType.NEVER);
-
-        const box = new St.BoxLayout({
-            style_class: 'emoji-category-bar',
-            x_expand: true,
-        });
-
-        this.#categoryButtons.clear();
-
-        for (const category of categories) {
-            const button = new St.Button({
-                style_class: 'emoji-category-button',
-                label: this.#labelForCategory(category),
-                can_focus: true,
-                x_align: Clutter.ActorAlign.CENTER,
-            });
-            if (typeof button.set_tooltip_text === 'function') {
-                button.set_tooltip_text(category);
-            }
-            button.connect('clicked', () => this.#setCategory(category));
-
-            this.#categoryButtons.set(category, button);
-            box.add_child(button);
-        }
-
-        this.#setCategory('All', { skipRefilter: true });
-        scroll.add_child(box);
-        return scroll;
-    }
-
-    /**
-     * Update selected category
-     *
-     * @param {string} category
-     * @param {{skipRefilter?: boolean}} [options]
-     * @returns {void}
-     */
-    #setCategory(category, options = {}) {
-        this.#currentCategory = category;
-        this.#updateCategoryStates();
-        if (!options.skipRefilter) {
-            this.#queueFilter(true);
-        }
-    }
-
-    /**
-     * Highlight active category button
-     *
-     * @returns {void}
-     */
-    #updateCategoryStates() {
-        for (const [category, button] of this.#categoryButtons) {
-            if (category === this.#currentCategory) {
-                button.add_style_class_name('active');
-            } else {
-                button.remove_style_class_name('active');
-            }
-        }
     }
 
     /**
@@ -400,21 +329,16 @@ export default class EmojiPickerExtension extends Extension {
      */
     #applyFilter() {
         if (!this.#emojiGrid) {
+            Main.notify('Debug', 'No emoji grid in filter');
             return;
         }
 
-        const query = this.#searchEntry
-            ? this.#searchEntry.get_clutter_text().get_text().trim().toLowerCase()
-            : '';
-
-        const category = this.#currentCategory;
+        const query = this.#getSearchQuery();
         const results = [];
 
-        for (const item of this.#emojiData) {
-            if (category !== 'All' && item.category !== category) {
-                continue;
-            }
+        Main.notify('Debug', `Filtering ${this.#emojiData.length} emojis, query="${query}"`);
 
+        for (const item of this.#emojiData) {
             if (query) {
                 const fields = [
                     item.emoji,
@@ -437,6 +361,7 @@ export default class EmojiPickerExtension extends Extension {
             }
         }
 
+        Main.notify('Debug', `Rendering ${results.length} emojis`);
         this.#renderEmojis(results);
     }
 
@@ -448,32 +373,54 @@ export default class EmojiPickerExtension extends Extension {
      */
     #renderEmojis(results) {
         if (!this.#emojiGrid) {
+            Main.notify('Debug', 'No emoji grid');
             return;
         }
 
-        for (const child of this.#emojiGrid.get_children()) {
+        Main.notify('Debug', `Rendering ${results.length} emojis`);
+
+        // Properly remove all children first
+        const children = this.#emojiGrid.get_children();
+        for (const child of children) {
+            this.#emojiGrid.remove_child(child);
             child.destroy();
         }
 
+        const EMOJIS_PER_ROW = 10;
+        let currentRow = null;
+        let emojiCount = 0;
+
         for (const item of results) {
-            const label = new St.Label({
-                text: item.emoji,
-                y_align: Clutter.ActorAlign.CENTER,
-                x_align: Clutter.ActorAlign.CENTER,
-            });
+            // Create a new row every EMOJIS_PER_ROW emojis
+            if (emojiCount % EMOJIS_PER_ROW === 0) {
+                currentRow = new St.BoxLayout({
+                    vertical: false,
+                    style_class: 'emoji-row',
+                    x_expand: true,
+                });
+                this.#emojiGrid.add_child(currentRow);
+            }
 
             const button = new St.Button({
                 style_class: 'emoji-button',
+                label: item.emoji,
                 can_focus: true,
-                child: label,
                 x_expand: false,
+                y_expand: false,
             });
 
             button.set_accessible_name(item.description ?? item.emoji);
             button.connect('clicked', () => this.#handleEmojiSelected(item));
 
-            this.#emojiGrid.add_child(button);
+            currentRow.add_child(button);
+            emojiCount++;
         }
+        
+        // Force the grid to show and queue a relayout
+        this.#emojiGrid.show();
+        this.#emojiGrid.queue_relayout();
+        
+        Main.notify('Debug', `Grid has ${this.#emojiGrid.get_n_children()} rows`);
     }
 
     /**
@@ -516,6 +463,7 @@ export default class EmojiPickerExtension extends Extension {
      * @returns {void}
      */
     #openPopup() {
+        Main.notify('Debug', 'Opening popup, queuing filter');
         this.#queueFilter(true);
         this.#popup.opacity = 0;
         this.#popup.show();
@@ -527,7 +475,17 @@ export default class EmojiPickerExtension extends Extension {
 
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             this.#repositionPopup();
-            this.#searchEntry?.grab_key_focus();
+            const entry = this.#searchEntry;
+            if (entry) {
+                if (typeof entry.grab_key_focus === 'function') {
+                    entry.grab_key_focus();
+                } else if (typeof entry.grab_focus === 'function') {
+                    entry.grab_focus();
+                } else {
+                    const textActor = entry.get_clutter_text?.();
+                    textActor?.grab_key_focus?.();
+                }
+            }
             return GLib.SOURCE_REMOVE;
         });
 
@@ -698,31 +656,60 @@ export default class EmojiPickerExtension extends Extension {
     }
 
     /**
-     * Build category list including "All"
+     * Resolve search entry text with compatibility fallbacks
      *
-     * @returns {string[]}
-     */
-    #collectCategories() {
-        const set = new Set(['All']);
-        for (const item of this.#emojiData) {
-            if (item.category) {
-                set.add(item.category);
-            }
-        }
-        return Array.from(set);
-    }
-
-    /**
-     * Resolve display label for category button
-     *
-     * @param {string} category
      * @returns {string}
      */
-    #labelForCategory(category) {
-        if (category === 'All') {
-            return '★';
+    #getSearchQuery() {
+        const entry = this.#searchEntry;
+        if (!entry) {
+            return '';
         }
-        return CATEGORY_EMOJI[category] ?? category[0] ?? '?';
+
+        const readText = actor => {
+            if (!actor) {
+                return '';
+            }
+            try {
+                if (typeof actor.get_text === 'function') {
+                    const value = actor.get_text();
+                    if (typeof value === 'string') {
+                        return value;
+                    }
+                }
+            } catch (error) {
+                // Ignore and fall back to other properties
+            }
+
+            if (actor.text !== undefined) {
+                return String(actor.text);
+            }
+
+            return '';
+        };
+
+        let raw = '';
+
+        if (typeof entry.get_text === 'function') {
+            try {
+                const value = entry.get_text();
+                if (typeof value === 'string') {
+                    raw = value;
+                }
+            } catch (error) {
+                // Ignore and fall back to other accessors
+            }
+        }
+
+        if (!raw) {
+            raw = readText(entry.get_clutter_text?.());
+        }
+
+        if (!raw && entry.text !== undefined) {
+            raw = String(entry.text);
+        }
+
+        return raw.trim().toLowerCase();
     }
 
     /**
