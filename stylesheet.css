@@ -6,6 +6,89 @@
     height: 100%;
 }
 
+/* Header with drag handle and buttons */
+.emoji-picker-header {
+    height: 32px;
+    border-radius: 12px 12px 0 0;
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 8px;
+}
+
+/* Drag handle (center bar) */
+.emoji-picker-drag-handle {
+    width: 60px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    transition: background-color 120ms ease;
+}
+
+.emoji-picker-drag-handle::before {
+    content: '';
+    width: 40px;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+.emoji-picker-drag-handle:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.emoji-picker-drag-handle:hover::before {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Header buttons container */
+.emoji-picker-header-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+/* Header buttons (? and ×) */
+.emoji-picker-header-button {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    transition: all 120ms ease;
+    padding: 0;
+}
+
+.emoji-picker-header-button StLabel {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+}
+
+.emoji-picker-header-button:hover,
+.emoji-picker-header-button:focus {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.emoji-picker-header-button:hover StLabel,
+.emoji-picker-header-button:focus StLabel {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+/* Close button specific styling */
+.emoji-picker-close-button:hover,
+.emoji-picker-close-button:focus {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.emoji-picker-close-button:hover StLabel,
+.emoji-picker-close-button:focus StLabel {
+    color: #ef4444;
+}
+
 .emoji-picker-base {
     padding: 0;
     width: 100%;

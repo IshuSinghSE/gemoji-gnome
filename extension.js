@@ -259,6 +259,68 @@ export default class EmojiPickerExtension extends Extension {
             height: dimensions.height,
         });
 
+        // Add drag handle header with buttons
+        const headerBox = new St.BoxLayout({
+            style_class: 'emoji-picker-header',
+            x_expand: true,
+        });
+
+        // Left spacer
+        const leftSpacer = new St.Widget({
+            x_expand: true,
+        });
+
+        // Center drag handle with bar indicator
+        const dragHandle = new St.Widget({
+            style_class: 'emoji-picker-drag-handle',
+            reactive: true,
+            track_hover: true,
+            x_align: Clutter.ActorAlign.CENTER,
+        });
+
+        // Right buttons container
+        const rightButtons = new St.BoxLayout({
+            style_class: 'emoji-picker-header-buttons',
+            x_align: Clutter.ActorAlign.END,
+        });
+
+        // Help button (?)
+        const helpButton = new St.Button({
+            style_class: 'emoji-picker-header-button',
+            child: new St.Label({ text: '?' }),
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
+        });
+
+        helpButton.connect('clicked', () => {
+            log('emoji-picker: Help button clicked');
+            // TODO: Show help dialog or open documentation
+        });
+
+        // Close button (×)
+        const closeButton = new St.Button({
+            style_class: 'emoji-picker-header-button emoji-picker-close-button',
+            child: new St.Label({ text: '×' }),
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
+        });
+
+        closeButton.connect('clicked', () => {
+            log('emoji-picker: Close button clicked');
+            this.#togglePopup(true);
+        });
+
+        rightButtons.add_child(helpButton);
+        rightButtons.add_child(closeButton);
+
+        headerBox.add_child(leftSpacer);
+        headerBox.add_child(dragHandle);
+        headerBox.add_child(rightButtons);
+
+        container.add_child(headerBox);
+
         // Get categories
         const categories = collectCategories(this.#emojiData);
         log(`emoji-picker: Categories for tabs: ${JSON.stringify(categories)}`);
@@ -332,11 +394,72 @@ export default class EmojiPickerExtension extends Extension {
         this.#popup.add_child(container);
         Main.layoutManager.addChrome(this.#popup);
 
+        // Add drag functionality to the handle
+        this.#setupDragHandle(dragHandle);
+
         // Apply theme
         this.#applyTheme();
 
         // Initial render
         this.#renderEmojisByCategory();
+    }
+
+    /**
+     * Setup drag functionality for the handle
+     * @param {St.Widget} dragHandle - The drag handle widget
+     */
+    #setupDragHandle(dragHandle) {
+        let dragging = false;
+        let startX = 0;
+        let startY = 0;
+        let popupStartX = 0;
+        let popupStartY = 0;
+
+        dragHandle.connect('button-press-event', (actor, event) => {
+            if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
+
+            [startX, startY] = event.get_coords();
+            [popupStartX, popupStartY] = this.#popup.get_position();
+            dragging = true;
+
+            return Clutter.EVENT_STOP;
+        });
+
+        dragHandle.connect('button-release-event', () => {
+            dragging = false;
+            return Clutter.EVENT_STOP;
+        });
+
+        dragHandle.connect('motion-event', (actor, event) => {
+            if (!dragging) return Clutter.EVENT_PROPAGATE;
+
+            const [currentX, currentY] = event.get_coords();
+            const deltaX = currentX - startX;
+            const deltaY = currentY - startY;
+
+            this.#popup.set_position(
+                popupStartX + deltaX,
+                popupStartY + deltaY
+            );
+
+            return Clutter.EVENT_STOP;
+        });
+    }
+
+    /**
+     * Handle drag motion
+     */
+    #onDragMotion(startX, startY, popupStartX, popupStartY) {
+        const [currentX, currentY] = global.get_pointer();
+        const deltaX = currentX - startX;
+        const deltaY = currentY - startY;
+
+        this.#popup.set_position(
+            popupStartX + deltaX,
+            popupStartY + deltaY
+        );
+
+        return true;
     }
 
     /**
@@ -515,7 +638,8 @@ export default class EmojiPickerExtension extends Extension {
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         });
 
-        this.#ensureStageMonitor();
+        // Note: Stage monitor disabled - popup only closes via close button
+        // this.#ensureStageMonitor();
     }
 
     /**
