@@ -18,6 +18,58 @@
     border: 1px solid rgba(255,255,255,0.06);
 }
 
+/* Top bar with search and skin tones */
+.emoji-top-bar {
+    padding: 12px;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.emoji-search-entry {
+    background-color: rgba(255,255,255,0.06);
+    color: #eee;
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    flex: 1;
+}
+
+.emoji-picker-custom-theme .emoji-search-entry:focus {
+    background-color: rgba(255,255,255,0.08);
+    border-color: rgba(14, 165, 233, 0.4);
+}
+
+/* Skin tone selector */
+.skin-tone-selector {
+    gap: 6px;
+    padding: 0;
+}
+
+.skin-tone-circle {
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    padding: 2px;
+    border: 2px solid transparent;
+    transition: all 100ms ease;
+}
+
+.skin-tone-circle:hover,
+.skin-tone-circle:focus {
+    border-color: rgba(14, 165, 233, 0.6);
+    transform: scale(1.1);
+}
+
+.skin-tone-circle:active {
+    transform: scale(0.95);
+}
+
+.skin-tone-color {
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.15);
+}
+
 /* Category tabs (like EmojiMart) */
 .emoji-category-tabs {
     padding: 6px 8px;
@@ -63,16 +115,6 @@
     color: #0ea5e9;
 }
 
-.emoji-picker-custom-theme .search-entry {
-    background-color: rgba(255,255,255,0.06);
-    color: #eee;
-    border-radius: 8px;
-    padding: 10px 14px;
-    margin: 12px;
-    margin-bottom: 8px;
-    border: 1px solid transparent;
-}
-
 .emoji-scroll {
     max-height: 480px;
     min-height: 420px;
@@ -109,6 +151,22 @@
 .emoji-button:hover,
 .emoji-button:focus {
     background-color: rgba(255,255,255,0.12);
+}
+
+.emoji-button.has-skin-tones {
+    position: relative;
+}
+
+.emoji-button.has-skin-tones::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: rgba(255, 200, 100, 0.9);
+    box-shadow: 0 0 4px rgba(255, 200, 100, 0.5);
 }
 
 .emoji-category-scroll {

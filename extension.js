@@ -25,6 +25,7 @@ import { SearchManager } from './core/searchManager.js';
 import { CategoryManager } from './core/categoryManager.js';
 import { EmojiRenderer } from './core/emojiRenderer.js';
 import { ClipboardManager } from './core/clipboardManager.js';
+import { SkinToneSelector } from './core/skinToneSelector.js';
 
 /**
  * Extension entry point
@@ -76,6 +77,9 @@ export default class EmojiPickerExtension extends Extension {
     /** @type {ClipboardManager|null} */
     #clipboardManager = null;
 
+    /** @type {SkinToneSelector|null} */
+    #skinToneSelector = null;
+
     /**
      * Enable extension
      */
@@ -86,6 +90,8 @@ export default class EmojiPickerExtension extends Extension {
         // Initialize modules
         this.#usageTracker = new UsageTracker(this.#settings);
         this.#clipboardManager = new ClipboardManager(this.#settings);
+        // Skin tone selector will be initialized when building popup
+        this.#skinToneSelector = null;
         this.#keybindingManager = new KeybindingManager(
             this.#settings,
             'emoji-keybinding',
@@ -127,6 +133,11 @@ export default class EmojiPickerExtension extends Extension {
         if (this.#keybindingManager) {
             this.#keybindingManager.unregister();
             this.#keybindingManager = null;
+        }
+
+        if (this.#skinToneSelector) {
+            this.#skinToneSelector.destroy();
+            this.#skinToneSelector = null;
         }
 
         // Cleanup UI
@@ -245,6 +256,14 @@ export default class EmojiPickerExtension extends Extension {
         // Create category tabs
         const categoryTabs = this.#categoryManager.buildCategoryTabs(categories, this.dir);
 
+        // Create top bar with search and skin tone selector
+        const topBar = new St.BoxLayout({
+            style_class: 'emoji-top-bar',
+            vertical: false,
+            x_expand: true,
+            visible: true,
+        });
+
         // Create search entry
         this.#searchEntry = new St.Entry({
             style_class: 'emoji-search-entry',
@@ -253,19 +272,30 @@ export default class EmojiPickerExtension extends Extension {
             x_expand: true,
         });
 
+        topBar.add_child(this.#searchEntry);
+
+        // Initialize skin tone selector in the top bar
+        this.#skinToneSelector = new SkinToneSelector(topBar, (emoji) => {
+            this.#handleEmojiSelected(emoji);
+        });
+
         // Initialize search manager
         this.#searchManager = new SearchManager(this.#searchEntry, (query) => {
             this.#applyFilter(query);
         });
 
         // Initialize emoji renderer
-        this.#emojiRenderer = new EmojiRenderer(this.#emojiGrid, (item) => {
-            this.#handleEmojiSelected(item);
-        });
+        this.#emojiRenderer = new EmojiRenderer(
+            this.#emojiGrid,
+            (item) => {
+                this.#handleEmojiSelected(item);
+            },
+            this.#skinToneSelector
+        );
 
         // Build layout
         container.add_child(categoryTabs);
-        container.add_child(this.#searchEntry);
+        container.add_child(topBar);
         container.add_child(this.#scrollView);
 
         // Create popup

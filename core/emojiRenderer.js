@@ -13,14 +13,55 @@ import { EMOJIS_PER_ROW } from './constants.js';
 export class EmojiRenderer {
     #emojiGrid;
     #onEmojiSelectedCallback;
+    #skinToneSelector;
 
     /**
      * @param {St.BoxLayout} emojiGrid
      * @param {Function} onEmojiSelectedCallback - Called when emoji is selected
+     * @param {SkinToneSelector} skinToneSelector - Optional skin tone selector
      */
-    constructor(emojiGrid, onEmojiSelectedCallback) {
+    constructor(emojiGrid, onEmojiSelectedCallback, skinToneSelector = null) {
         this.#emojiGrid = emojiGrid;
         this.#onEmojiSelectedCallback = onEmojiSelectedCallback;
+        this.#skinToneSelector = skinToneSelector;
+    }
+
+    /**
+     * Create an emoji button with skin tone support
+     *
+     * @param {object} item - Emoji data
+     * @returns {St.Button} - Emoji button
+     */
+    #createEmojiButton(item) {
+        const button = new St.Button({
+            style_class: 'emoji-button',
+            label: item.emoji,
+            can_focus: true,
+            x_expand: false,
+            y_expand: false,
+        });
+
+        button.set_accessible_name(item.description ?? item.emoji);
+
+        // For emojis with skin tones, show selector instead of direct selection
+        if (item.skin_tones && this.#skinToneSelector) {
+            button.connect('clicked', () => {
+                // Show skin tone selector
+                this.#skinToneSelector.show(item);
+            });
+            
+            // Add visual indicator for skin tone support
+            button.add_style_class_name('has-skin-tones');
+        } else {
+            // Regular click - select emoji directly
+            button.connect('clicked', () => {
+                if (this.#onEmojiSelectedCallback) {
+                    this.#onEmojiSelectedCallback(item);
+                }
+            });
+        }
+
+        return button;
     }
 
     /**
@@ -64,21 +105,7 @@ export class EmojiRenderer {
                 this.#emojiGrid.add_child(currentRow);
             }
 
-            const button = new St.Button({
-                style_class: 'emoji-button',
-                label: item.emoji,
-                can_focus: true,
-                x_expand: false,
-                y_expand: false,
-            });
-
-            button.set_accessible_name(item.description ?? item.emoji);
-            button.connect('clicked', () => {
-                if (this.#onEmojiSelectedCallback) {
-                    this.#onEmojiSelectedCallback(item);
-                }
-            });
-
+            const button = this.#createEmojiButton(item);
             currentRow.add_child(button);
             emojiCount++;
         }
@@ -152,21 +179,7 @@ export class EmojiRenderer {
                     this.#emojiGrid.add_child(currentRow);
                 }
 
-                const button = new St.Button({
-                    style_class: 'emoji-button',
-                    label: item.emoji,
-                    can_focus: true,
-                    x_expand: false,
-                    y_expand: false,
-                });
-
-                button.set_accessible_name(item.description ?? item.emoji);
-                button.connect('clicked', () => {
-                    if (this.#onEmojiSelectedCallback) {
-                        this.#onEmojiSelectedCallback(item);
-                    }
-                });
-
+                const button = this.#createEmojiButton(item);
                 currentRow.add_child(button);
                 emojiCount++;
             }

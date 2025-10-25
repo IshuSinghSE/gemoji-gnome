@@ -18,6 +18,9 @@ rsync -av --delete \
 echo "🔧 Compiling GSettings schemas..."
 glib-compile-schemas ~/.local/share/gnome-shell/extensions/emoji-picker@local/schemas/
 
+echo "🔄 Restarting emoji-picker extension..."
+gnome-extensions disable emoji-picker@local && sleep 1 && gnome-extensions enable emoji-picker@local
+
 echo "✅ Deployment complete!"
 echo ""
 echo "⚠️  On Wayland, you need to log out and log back in to reload the extension"
