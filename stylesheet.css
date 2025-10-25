@@ -20,20 +20,21 @@
 
 /* Category tabs (like EmojiMart) */
 .emoji-category-tabs {
-    padding: 8px 12px;
-    gap: 4px;
+    padding: 6px 8px;
+    gap: 2px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .emoji-category-tab {
-    min-width: 40px;
-    min-height: 40px;
-    border-radius: 8px;
+    min-width: 32px;
+    max-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    border-radius: 6px;
     background: transparent;
-    font-size: 20px;
-    padding: 8px;
-    margin: 0 2px;
-    border-bottom: 3px solid transparent;
+    padding: 4px;
+    margin: 0;
+    border-bottom: 2px solid transparent;
     transition: all 120ms ease;
 }
 
@@ -45,6 +46,21 @@
 .emoji-category-tab.active {
     border-bottom-color: #0ea5e9;
     background-color: rgba(14, 165, 233, 0.1);
+}
+
+.emoji-category-icon {
+    color: rgba(255,255,255,0.7);
+    width: 18px;
+    height: 18px;
+}
+
+.emoji-category-tab:hover .emoji-category-icon,
+.emoji-category-tab:focus .emoji-category-icon {
+    color: rgba(255,255,255,0.9);
+}
+
+.emoji-category-tab.active .emoji-category-icon {
+    color: #0ea5e9;
 }
 
 .emoji-picker-custom-theme .search-entry {

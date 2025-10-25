@@ -19,22 +19,9 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const MAX_VISIBLE_EMOJIS = 360;
-const EMOJIS_PER_ROW = 9;
 const SEARCH_DEBOUNCE_MS = 120;
 const POPUP_WIDTH = 420;
 const POPUP_HEIGHT = 600;
-
-const CATEGORY_EMOJI = {
-    'Smileys & Emotion': '😀',
-    'People & Body': '🧑',
-    'Animals & Nature': '🦊',
-    'Food & Drink': '🍜',
-    'Travel & Places': '🛫',
-    'Activities': '⚽',
-    'Objects': '💡',
-    'Symbols': '🔣',
-    'Flags': '🏳️',
-};
 
 /**
  * Extension entry point
@@ -86,6 +73,9 @@ export default class EmojiPickerExtension extends Extension {
 
     /** @type {St.ScrollView|null} */
     #scrollView = null;
+
+    /** @type {St.Adjustment|null} */
+    #scrollAdjustment = null;
 
     /** @type {number} */
     #searchTimeoutId = 0;
@@ -317,17 +307,25 @@ export default class EmojiPickerExtension extends Extension {
                     vScroll = this.#scrollView.get_vscrollbar();
                 } else if (this.#scrollView && this.#scrollView.vscroll_bar) {
                     vScroll = this.#scrollView.vscroll_bar;
+                } else if (this.#scrollView && this.#scrollView.vscroll) {
+                    vScroll = this.#scrollView.vscroll;
                 }
 
                 if (vScroll && typeof vScroll.get_adjustment === 'function') {
-                    const adjustment = vScroll.get_adjustment();
-                    if (adjustment && typeof adjustment.connect === 'function') {
-                        adjustment.connect('notify::value', () => this.#onScroll());
+                    this.#scrollAdjustment = vScroll.get_adjustment();
+                    if (this.#scrollAdjustment && typeof this.#scrollAdjustment.connect === 'function') {
+                        this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
                     }
                 } else if (this.#scrollView && typeof this.#scrollView.connect === 'function') {
                     // Fallback: connect to scroll-event if scrollbar API isn't available
                     try {
-                        this.#scrollView.connect('scroll-event', () => this.#onScroll());
+                        this.#scrollView.connect('scroll-event', () => {
+                            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                                this.#onScroll();
+                                return GLib.SOURCE_REMOVE;
+                            });
+                            return Clutter.EVENT_PROPAGATE;
+                        });
                     } catch (e) {
                         log(`emoji-picker: failed to attach scroll-event: ${e}`);
                     }
@@ -371,9 +369,14 @@ export default class EmojiPickerExtension extends Extension {
         this.#categoryButtons.clear();
 
         // Add "Frequently Used" tab first
+        const frequentIcon = new St.Icon({
+            icon_name: this.#getCategoryIconName('Frequently Used'),
+            icon_size: 18,
+            style_class: 'emoji-category-icon',
+        });
         const frequentButton = new St.Button({
             style_class: 'emoji-category-tab',
-            label: '🕒',
+            child: frequentIcon,
             can_focus: true,
         });
         
@@ -386,9 +389,14 @@ export default class EmojiPickerExtension extends Extension {
         tabBar.add_child(frequentButton);
 
         for (const category of categories) {
+            const icon = new St.Icon({
+                icon_name: this.#getCategoryIconName(category),
+                icon_size: 18,
+                style_class: 'emoji-category-icon',
+            });
             const button = new St.Button({
                 style_class: 'emoji-category-tab',
-                label: this.#getCategoryIcon(category),
+                child: icon,
                 can_focus: true,
             });
             
@@ -406,24 +414,25 @@ export default class EmojiPickerExtension extends Extension {
     }
 
     /**
-     * Get icon for category
+     * Get icon file name for category
      *
      * @param {string} category
      * @returns {string}
      */
-    #getCategoryIcon(category) {
-        const icons = {
-            'Smileys & Emotion': '😀',
-            'People & Body': '👋',
-            'Animals & Nature': '🐵',
-            'Food & Drink': '🍎',
-            'Travel & Places': '✈️',
-            'Activities': '⚽',
-            'Objects': '💡',
-            'Symbols': '❤️',
-            'Flags': '🏁',
+    #getCategoryIconName(category) {
+        const iconNames = {
+            'Frequently Used': 'emoji-recent-symbolic',
+            'Smileys & Emotion': 'emoji-people-symbolic',
+            'People & Body': 'emoji-body-symbolic',
+            'Animals & Nature': 'emoji-nature-symbolic',
+            'Food & Drink': 'emoji-food-symbolic',
+            'Travel & Places': 'emoji-travel-symbolic',
+            'Activities': 'emoji-activities-symbolic',
+            'Objects': 'emoji-objects-symbolic',
+            'Symbols': 'emoji-symbols-symbolic',
+            'Flags': 'emoji-flags-symbolic',
         };
-        return icons[category] || '📁';
+        return iconNames[category] || 'emoji-recent-symbolic';
     }
 
     /**
@@ -436,21 +445,23 @@ export default class EmojiPickerExtension extends Extension {
         this.#currentCategory = category;
         this.#updateCategoryStates();
         
-        // Scroll to the category section
-        const section = this.#categorySections.get(category);
-        if (section && this.#scrollView) {
-            const [, categoryY] = section.get_transformed_position();
-            const [, gridY] = this.#emojiGrid.get_transformed_position();
-            const scrollPosition = categoryY - gridY;
-            
-            const vScroll = this.#scrollView.get_vscroll_bar();
-            if (vScroll) {
-                const adjustment = vScroll.get_adjustment();
-                if (adjustment) {
-                    adjustment.set_value(Math.max(0, scrollPosition - 10));
+        // Scroll to the category section after a small delay to ensure layout is ready
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+            const section = this.#categorySections.get(category);
+            if (section && this.#scrollView && this.#scrollAdjustment) {
+                try {
+                    // Get the position of the category header relative to the grid
+                    const allocation = section.get_allocation_box();
+                    const sectionY = allocation.y1;
+                    
+                    // Scroll to that position
+                    this.#scrollAdjustment.set_value(Math.max(0, sectionY - 10));
+                } catch (e) {
+                    log(`emoji-picker: error scrolling to category: ${e}`);
                 }
             }
-        }
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     /**
@@ -459,31 +470,27 @@ export default class EmojiPickerExtension extends Extension {
      * @returns {void}
      */
     #onScroll() {
-        if (!this.#scrollView || !this.#emojiGrid) {
+        if (!this.#scrollView || !this.#emojiGrid || !this.#scrollAdjustment) {
             return;
         }
 
-        const vScroll = this.#scrollView.get_vscroll_bar();
-        if (!vScroll) return;
+        const scrollY = this.#scrollAdjustment.get_value();
 
-        const adjustment = vScroll.get_adjustment();
-        if (!adjustment) return;
-
-        const scrollY = adjustment.get_value();
-        const [, gridY] = this.#emojiGrid.get_transformed_position();
-
-        // Find which category section is currently visible
+        // Find which category section is currently visible at the top
         let activeCategory = null;
         let minDistance = Infinity;
 
         for (const [category, section] of this.#categorySections.entries()) {
-            const [, sectionY] = section.get_transformed_position();
-            const relativeSectionY = sectionY - gridY;
-            const distance = Math.abs(scrollY - relativeSectionY);
-
-            if (relativeSectionY <= scrollY + 50 && distance < minDistance) {
-                minDistance = distance;
-                activeCategory = category;
+            const allocation = section.get_allocation_box();
+            const sectionY = allocation.y1;
+            
+            // Check if this section is at or above the current scroll position
+            if (sectionY <= scrollY + 50) {
+                const distance = scrollY - sectionY;
+                if (distance >= 0 && distance < minDistance) {
+                    minDistance = distance;
+                    activeCategory = category;
+                }
             }
         }
 
