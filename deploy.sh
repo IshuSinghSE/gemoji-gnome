@@ -3,7 +3,7 @@
 
 set -e
 
-echo "📦 Deploying emoji-picker extension..."
+echo "📦 Deploying Gemoji — GNOME Emoji Picker..."
 
 # Deploy all files
 rsync -av --delete \
@@ -12,11 +12,11 @@ rsync -av --delete \
   --exclude='extension_old.js' \
   --exclude='deploy.sh' \
   /home/ashu/Code/linux/emoji-picker/ \
-  ~/.local/share/gnome-shell/extensions/emoji-picker@local/
+  ~/.local/share/gnome-shell/extensions/gemoji@ishusinghse/
 
 # Compile schemas
 echo "🔧 Compiling GSettings schemas..."
-glib-compile-schemas ~/.local/share/gnome-shell/extensions/emoji-picker@local/schemas/
+glib-compile-schemas ~/.local/share/gnome-shell/extensions/gemoji@ishusinghse/schemas/
 
 echo "✅ Deployment complete!"
 echo ""

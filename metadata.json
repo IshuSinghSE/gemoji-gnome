@@ -1,10 +1,10 @@
 {
-  "name": "Emoji Picker",
-  "description": "A simple emoji picker extension for GNOME Shell",
+  "name": "Gemoji — GNOME Emoji Picker",
+  "description": "Quickly find and insert emojis from a compact GNOME Shell picker",
   "shell-version": ["45", "46", "47", "48", "49"],
-  "settings-schema": "org.gnome.shell.extensions.emoji-picker",
-  "gettext-domain": "emoji-picker",
-  "url": "https://github.com/IshuSinghSE/emoji-picker",
-  "uuid": "emoji-picker@local",
+  "settings-schema": "org.gnome.shell.extensions.gemoji",
+  "gettext-domain": "gemoji",
+  "url": "https://github.com/IshuSinghSE/gnome-emoji-picker",
+  "uuid": "gemoji@ishusinghse",
   "version": 1
 }

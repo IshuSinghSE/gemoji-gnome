@@ -1,6 +1,6 @@
-# Emoji Picker GNOME Shell Extension
+# Gemoji — GNOME Emoji Picker
 
-A modern, aesthetic emoji picker for GNOME Shell with EmojiMart-inspired design, featuring category navigation, search, and frequently used emojis tracking.
+Gemoji is a compact, fast emoji picker for GNOME Shell. Quickly find and insert emoji using search, categories, and a frequently-used section.
 
 ## Features
 
@@ -18,16 +18,16 @@ A modern, aesthetic emoji picker for GNOME Shell with EmojiMart-inspired design,
 ### Developer Installation
 
 1. Clone and deploy:
-   ```bash
-   git clone https://github.com/IshuSinghSE/gnome-emoji-picker.git
-   cd gnome-emoji-picker
-   rsync -av --delete --exclude='.git' --exclude='docs/' \
-     . ~/.local/share/gnome-shell/extensions/emoji-picker@local/
-   ```
+    ```bash
+    git clone https://github.com/IshuSinghSE/gnome-emoji-picker.git
+    cd gnome-emoji-picker
+    rsync -av --delete --exclude='.git' --exclude='docs/' \
+       . ~/.local/share/gnome-shell/extensions/gemoji@ishusinghse/
+    ```
 
 2. Compile schemas:
    ```bash
-   glib-compile-schemas ~/.local/share/gnome-shell/extensions/emoji-picker@local/schemas
+   glib-compile-schemas ~/.local/share/gnome-shell/extensions/gemoji@ishusinghse/schemas
    ```
 
 3. Restart GNOME Shell:
@@ -36,7 +36,7 @@ A modern, aesthetic emoji picker for GNOME Shell with EmojiMart-inspired design,
 
 4. Enable the extension:
    ```bash
-   gnome-extensions enable emoji-picker@local
+   gnome-extensions enable gemoji@ishusinghse
    ```
 
 ## Usage
@@ -49,7 +49,7 @@ A modern, aesthetic emoji picker for GNOME Shell with EmojiMart-inspired design,
 
 ## Settings
 
-Open preferences: `gnome-extensions prefs emoji-picker@local`
+Open preferences: `gnome-extensions prefs gemoji@ishusinghse`
 
 - **Show Indicator** - Display emoji icon in panel
 - **Use Keybinding** - Enable/disable keyboard shortcut
@@ -92,8 +92,8 @@ See detailed documentation:
 1. Edit files in the project directory
 2. Deploy changes:
    ```bash
-   rsync -av --delete --exclude='.git' --exclude='docs/' \
-     . ~/.local/share/gnome-shell/extensions/emoji-picker@local/
+      rsync -av --delete --exclude='.git' --exclude='docs/' \
+         . ~/.local/share/gnome-shell/extensions/gemoji@ishusinghse/
    ```
 3. Restart GNOME Shell and test
 

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="gemoji">
+  <schema id="org.gnome.shell.extensions.gemoji" path="/org/gnome/shell/extensions/gemoji/">
+    <key name="emoji-keybinding" type="as">
+      <default>['&lt;Super&gt;comma']</default>
+      <summary>Toggle emoji picker</summary>
+      <description>Keyboard shortcut to toggle the emoji picker popup</description>
+    </key>
+    <key name="use-custom-theme" type="b">
+      <default>true</default>
+      <summary>Use custom theme</summary>
+      <description>Use custom theme (true) or native GNOME Shell theme (false)</description>
+    </key>
+    <key name="emoji-usage-counts" type="s">
+      <default>'{}'</default>
+      <summary>Emoji usage counts</summary>
+      <description>JSON string storing emoji usage frequency for frequently used section</description>
+    </key>
+    <key name="show-indicator" type="b">
+      <default>true</default>
+      <summary>Show indicator</summary>
+      <description>Whether to show the emoji indicator in the top panel</description>
+    </key>
+    <key name="paste-on-select" type="b">
+      <default>false</default>
+      <summary>Paste on select</summary>
+      <description>Automatically paste the selected emoji at cursor position</description>
+    </key>
+    <key name="use-keybind" type="b">
+      <default>true</default>
+      <summary>Use keybind</summary>
+      <description>Enable your default keybind to open the emoji menu</description>
+    </key>
+    <key name="skin-tones-disabled" type="b">
+      <default>false</default>
+      <summary>Disable skin tones</summary>
+      <description>Hide skin tone selector for emojis</description>
+    </key>
+    <key name="search-disabled" type="b">
+      <default>false</default>
+      <summary>Disable search</summary>
+      <description>Hide search functionality</description>
+    </key>
+    <key name="search-placeholder" type="s">
+      <default>'Search'</default>
+      <summary>Search placeholder text</summary>
+      <description>Placeholder text shown in search field</description>
+    </key>
+    <key name="emoji-style" type="s">
+      <default>'native'</default>
+      <summary>Emoji style</summary>
+      <description>Style of emojis to display: native, apple, google, twitter, emojipedia</description>
+    </key>
+    <key name="theme" type="s">
+      <default>'auto'</default>
+      <summary>Theme preference</summary>
+      <description>Theme: auto, light, dark, custom</description>
+    </key>
+    <key name="suggestion-mode" type="s">
+      <default>'recent'</default>
+      <summary>Suggestion mode</summary>
+      <description>How to suggest emojis: recent, frequent, trending</description>
+    </key>
+    <key name="popup-size-mode" type="s">
+      <default>'default'</default>
+      <summary>Popup size mode</summary>
+      <description>Size preset for emoji picker: compact, default, custom</description>
+    </key>
+    <key name="popup-width" type="i">
+      <default>420</default>
+      <summary>Popup width</summary>
+      <description>Width of the emoji picker popup in pixels (used when size-mode is custom)</description>
+    </key>
+    <key name="popup-height" type="i">
+      <default>600</default>
+      <summary>Popup height</summary>
+      <description>Height of the emoji picker popup in pixels (used when size-mode is custom)</description>
+    </key>
+    <key name="skin-tone-location" type="s">
+      <default>'search'</default>
+      <summary>Skin tone picker location</summary>
+      <description>Where to show skin tone selector: search, top, bottom</description>
+    </key>
+    <key name="custom-emojis-enabled" type="b">
+      <default>false</default>
+      <summary>Enable custom emojis</summary>
+      <description>Allow adding custom emoji shortcuts</description>
+    </key>
+    <key name="reactions-enabled" type="b">
+      <default>false</default>
+      <summary>Enable reactions</summary>
+      <description>Show reaction shortcuts</description>
+    </key>
+  </schema>
+</schemalist>
