@@ -2,6 +2,9 @@
 
 Gemoji is a compact, fast emoji picker for GNOME Shell. Quickly find and insert emoji using search, categories, and a frequently-used section.
 
+
+![Gemoji Screenshot](./assets/screenshots/02-overview-2.png)
+
 ## Features
 
 - 🎨 **Modern UI** - Clean, minimal design inspired by EmojiMart
@@ -19,8 +22,8 @@ Gemoji is a compact, fast emoji picker for GNOME Shell. Quickly find and insert 
 
 1. Clone and deploy:
     ```bash
-    git clone https://github.com/IshuSinghSE/gnome-emoji-picker.git
-    cd gnome-emoji-picker
+    git clone https://github.com/IshuSinghSE/gemoji-gnome.git
+    cd gemoji-gnome
     rsync -av --delete --exclude='.git' --exclude='docs/' \
        . ~/.local/share/gnome-shell/extensions/gemoji@ishusinghse/
     ```
@@ -46,6 +49,19 @@ Gemoji is a compact, fast emoji picker for GNOME Shell. Quickly find and insert 
 - **Select Category**: Click category icons at the top
 - **Choose Emoji**: Click any emoji to copy to clipboard
 - **Close**: Click outside the picker or press `Esc`
+
+## Screenshots
+
+Below are a few screenshots showing Gemoji in action. Captions are brief — alt text appears in the Markdown for accessibility.
+
+![Overview (compact)](assets/screenshots/01-overview.png "Gemoji main popup showing emoji grid and search")
+
+![Overview (closer)](assets/screenshots/02-overview-2.png "Closer view of the emoji grid and category icons")
+
+![Preferences — General](assets/screenshots/03-prefs-general.png "General preferences: keybind, indicator, paste-on-select")
+
+![Search result](assets/screenshots/04-serach-result.png "Search results showing the 'smirking' emoji")
+
 
 ## Settings
 
