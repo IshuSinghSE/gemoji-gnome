@@ -19,8 +19,8 @@
 
 /* Drag handle (center bar) */
 .emoji-picker-drag-handle {
-    width: 60px;
-    height: 32px;
+    width: 200px;
+    height: 24px;
     cursor: pointer;
     display: flex;
     justify-content: center;
@@ -112,8 +112,8 @@
 /* Category tabs (like EmojiMart) */
 .emoji-category-tabs {
     padding: 8px 12px;
-    gap: 4px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    gap: 8px;
+    /* border-bottom: 1px solid rgba(255,255,255,0.1); */
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
@@ -122,15 +122,15 @@
 }
 
 .emoji-category-tab {
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 32px;
+    min-height: 32px;
     width: 36px;
     height: 36px;
-    border-radius: 8px;
+    border-radius: 12px;
     background: transparent;
     padding: 4px;
     margin: 0;
-    border-bottom: 2px solid transparent;
+    /* border-bottom: 2px solid transparent; */
     transition: all 120ms ease;
     display: flex;
     align-items: center;
@@ -144,14 +144,14 @@
 }
 
 .emoji-category-tab.active {
-    border-bottom-color: #0ea5e9;
+    /* border-bottom-color: #0ea5e9; */
     background-color: rgba(14, 165, 233, 0.1);
 }
 
 .emoji-category-icon {
     color: rgba(255,255,255,0.7);
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
 }
 
 .emoji-category-tab:hover .emoji-category-icon,
@@ -163,15 +163,15 @@
     color: #0ea5e9;
 }
 
-.emoji-picker-custom-theme .search-entry {
-    background-color: rgba(255,255,255,0.06);
+/* Search entry (placed at top) */
+.emoji-search-entry {
+    background-color: rgba(255,255,255,0.04);
     color: #eee;
-    border-radius: 8px;
-    padding: 3% 4%;
-    margin: 2% 3%;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 10px 12px;
     border: 1px solid transparent;
     font-size: 14px;
-    flex-shrink: 0;
 }
 
 .emoji-scroll {
@@ -191,9 +191,14 @@
 .emoji-category-header {
     font-size: 12px;
     font-weight: 600;
-    color: rgba(255,255,255,0.6);
-    padding: 6px 4px 4px 4px;
-    margin-top: 4px;
+    color: rgba(255,255,255,0.8);
+    padding: 8px 12px;
+    margin: 0;
+    /* Make category headers sticky within the scroll area */
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: rgba(30, 30, 40, 0.95);
 }
 
 .emoji-row {
@@ -256,7 +261,7 @@
 .emoji-category-button {
     min-width: 42px;
     min-height: 42px;
-    border-radius: 10px;
+    border-radius: 24px;
     background: transparent;
     font-size: 18px;
     padding: 6px;

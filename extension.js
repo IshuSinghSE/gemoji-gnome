@@ -265,59 +265,61 @@ export default class EmojiPickerExtension extends Extension {
             x_expand: true,
         });
 
-        // Left spacer
-        const leftSpacer = new St.Widget({
-            x_expand: true,
+        // Left: Native menu button
+        const menuButton = new St.Button({
+            style_class: 'titlebutton',
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
         });
+        // Use symbolic icon name so Shell can recolor it for the current theme
+        const menuIcon = new St.Icon({
+            icon_name: 'open-menu-symbolic',
+            icon_size: 16,
+            style_class: 'system-status-icon',
+        });
+        menuButton.set_child(menuIcon);
+        menuButton.connect('clicked', () => {
+            log('emoji-picker: Menu button clicked');
+            // TODO: Show menu/help options
+        });
+
+        // Spacer to help center the drag handle
+        const leftSpacer = new St.Widget({ x_expand: true });
 
         // Center drag handle with bar indicator
         const dragHandle = new St.Widget({
             style_class: 'emoji-picker-drag-handle',
             reactive: true,
             track_hover: true,
-            x_align: Clutter.ActorAlign.CENTER,
         });
 
-        // Right buttons container
-        const rightButtons = new St.BoxLayout({
-            style_class: 'emoji-picker-header-buttons',
-            x_align: Clutter.ActorAlign.END,
-        });
+        const rightSpacer = new St.Widget({ x_expand: true });
 
-        // Help button (?)
-        const helpButton = new St.Button({
-            style_class: 'emoji-picker-header-button',
-            child: new St.Label({ text: '?' }),
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-        });
-
-        helpButton.connect('clicked', () => {
-            log('emoji-picker: Help button clicked');
-            // TODO: Show help dialog or open documentation
-        });
-
-        // Close button (×)
+        // Right: Native close button
         const closeButton = new St.Button({
-            style_class: 'emoji-picker-header-button emoji-picker-close-button',
-            child: new St.Label({ text: '×' }),
+            style_class: 'titlebutton',
             reactive: true,
             can_focus: true,
             track_hover: true,
         });
-
+        // Use symbolic icon name so Shell can recolor it for the current theme
+        const closeIcon = new St.Icon({
+            icon_name: 'window-close-symbolic',
+            icon_size: 16,
+            style_class: 'system-status-icon',
+        });
+        closeButton.set_child(closeIcon);
         closeButton.connect('clicked', () => {
             log('emoji-picker: Close button clicked');
             this.#togglePopup(true);
         });
 
-        rightButtons.add_child(helpButton);
-        rightButtons.add_child(closeButton);
-
+        headerBox.add_child(menuButton);
         headerBox.add_child(leftSpacer);
         headerBox.add_child(dragHandle);
-        headerBox.add_child(rightButtons);
+        headerBox.add_child(rightSpacer);
+        headerBox.add_child(closeButton);
 
         container.add_child(headerBox);
 
@@ -378,10 +380,10 @@ export default class EmojiPickerExtension extends Extension {
             popupDims.emojisPerRow
         );
 
-        // Build layout
-        container.add_child(categoryTabs);
-        container.add_child(this.#searchEntry);
-        container.add_child(this.#scrollView);
+    // Build layout: search bar first, then category tabs, then the scrollable grid
+    container.add_child(this.#searchEntry);
+    container.add_child(categoryTabs);
+    container.add_child(this.#scrollView);
 
         // Create popup
         this.#popup = new St.Widget({
