@@ -265,24 +265,7 @@ export default class EmojiPickerExtension extends Extension {
             x_expand: true,
         });
 
-        // Left: Native menu button
-        const menuButton = new St.Button({
-            style_class: 'titlebutton',
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-        });
-        // Use symbolic icon name so Shell can recolor it for the current theme
-        const menuIcon = new St.Icon({
-            icon_name: 'open-menu-symbolic',
-            icon_size: 16,
-            style_class: 'system-status-icon',
-        });
-        menuButton.set_child(menuIcon);
-        menuButton.connect('clicked', () => {
-            log('emoji-picker: Menu button clicked');
-            // TODO: Show menu/help options
-        });
+        // (Menu button removed) - header will only contain the centered drag handle
 
         // Spacer to help center the drag handle
         const leftSpacer = new St.Widget({ x_expand: true });
@@ -296,30 +279,11 @@ export default class EmojiPickerExtension extends Extension {
 
         const rightSpacer = new St.Widget({ x_expand: true });
 
-        // Right: Native close button
-        const closeButton = new St.Button({
-            style_class: 'titlebutton',
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-        });
-        // Use symbolic icon name so Shell can recolor it for the current theme
-        const closeIcon = new St.Icon({
-            icon_name: 'window-close-symbolic',
-            icon_size: 16,
-            style_class: 'system-status-icon',
-        });
-        closeButton.set_child(closeIcon);
-        closeButton.connect('clicked', () => {
-            log('emoji-picker: Close button clicked');
-            this.#togglePopup(true);
-        });
+        // (Close button removed)
 
-        headerBox.add_child(menuButton);
-        headerBox.add_child(leftSpacer);
-        headerBox.add_child(dragHandle);
-        headerBox.add_child(rightSpacer);
-        headerBox.add_child(closeButton);
+    headerBox.add_child(leftSpacer);
+    headerBox.add_child(dragHandle);
+    headerBox.add_child(rightSpacer);
 
         container.add_child(headerBox);
 

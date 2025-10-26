@@ -62,50 +62,9 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.5) inset, 0 1px 0 rgba(255,255,255,0.04);
 }
 
-/* Header buttons container */
-.emoji-picker-header-buttons {
-    display: flex;
-    gap: 4px;
-}
+/* Header button styles removed (menu/close controls have been removed from header) */
 
-/* Header buttons (? and ×) */
-.emoji-picker-header-button {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    border: none;
-    transition: all 120ms ease;
-    padding: 0;
-}
-
-.emoji-picker-header-button StLabel {
-    font-size: 18px;
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: 600;
-    background-color: #0ea5e9;
-}
-
-.emoji-picker-header-button:hover,
-.emoji-picker-header-button:focus {
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.emoji-picker-header-button:hover StLabel,
-.emoji-picker-header-button:focus StLabel {
-    color: rgba(255, 255, 255, 0.95);
-}
-
-/* Close button specific styling */
-.emoji-picker-close-button:hover,
-.emoji-picker-close-button:focus {
-    background: rgba(239, 68, 68, 0.2);
-}
-
-.emoji-picker-close-button:hover StLabel,
-.emoji-picker-close-button:focus StLabel {
-    color: #ef4444;
-}
+/* Close button styles removed (control removed from header) */
 
 .emoji-picker-base {
     padding: 0;
