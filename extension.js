@@ -17,7 +17,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 // Import our modules
-import { POPUP_WIDTH, POPUP_HEIGHT } from './core/constants.js';
+import { POPUP_WIDTH, POPUP_HEIGHT, POPUP_SIZE_MODES } from './core/constants.js';
 import { loadEmojiData, collectCategories } from './core/emojiData.js';
 import { UsageTracker } from './core/usageTracker.js';
 import { KeybindingManager } from './core/keybindingManager.js';
@@ -25,6 +25,7 @@ import { SearchManager } from './core/searchManager.js';
 import { CategoryManager } from './core/categoryManager.js';
 import { EmojiRenderer } from './core/emojiRenderer.js';
 import { ClipboardManager } from './core/clipboardManager.js';
+import { PopupSizeManager } from './core/popupSizeManager.js';
 
 /**
  * Extension entry point
@@ -76,6 +77,38 @@ export default class EmojiPickerExtension extends Extension {
     /** @type {ClipboardManager|null} */
     #clipboardManager = null;
 
+    /** @type {PopupSizeManager|null} */
+    #popupSizeManager = null;
+
+    /**
+     * Get popup dimensions based on size mode
+     * @returns {{width: number, height: number}}
+     */
+    #getPopupDimensions() {
+        if (this.#popupSizeManager) {
+            const dims = this.#popupSizeManager.getDimensions();
+            return {
+                width: dims.width,
+                height: dims.height
+            };
+        }
+        
+        // Fallback if manager not initialized
+        const sizeMode = this.#settings.get_string('popup-size-mode') || 'default';
+        if (sizeMode === 'custom') {
+            return {
+                width: this.#settings.get_int('popup-width'),
+                height: this.#settings.get_int('popup-height')
+            };
+        }
+        
+        const preset = POPUP_SIZE_MODES[sizeMode] || POPUP_SIZE_MODES.default;
+        return {
+            width: preset.width,
+            height: preset.height
+        };
+    }
+
     /**
      * Enable extension
      */
@@ -86,6 +119,10 @@ export default class EmojiPickerExtension extends Extension {
         // Initialize modules
         this.#usageTracker = new UsageTracker(this.#settings);
         this.#clipboardManager = new ClipboardManager(this.#settings);
+        this.#popupSizeManager = new PopupSizeManager(
+            this.#settings,
+            (dimensions) => this.#onPopupSizeChange(dimensions)
+        );
         this.#keybindingManager = new KeybindingManager(
             this.#settings,
             'emoji-keybinding',
@@ -127,6 +164,11 @@ export default class EmojiPickerExtension extends Extension {
         if (this.#keybindingManager) {
             this.#keybindingManager.unregister();
             this.#keybindingManager = null;
+        }
+
+        if (this.#popupSizeManager) {
+            this.#popupSizeManager.destroy();
+            this.#popupSizeManager = null;
         }
 
         // Cleanup UI
@@ -206,13 +248,44 @@ export default class EmojiPickerExtension extends Extension {
         }
 
         log('emoji-picker: Creating popup container');
+        // Get dimensions based on size mode
+        const dimensions = this.#getPopupDimensions();
+        
         // Create main container
         const container = new St.BoxLayout({
             vertical: true,
             style_class: 'emoji-picker-popup',
-            width: POPUP_WIDTH,
-            height: POPUP_HEIGHT,
+            width: dimensions.width,
+            height: dimensions.height,
         });
+
+        // Add drag handle header with buttons
+        const headerBox = new St.BoxLayout({
+            style_class: 'emoji-picker-header',
+            x_expand: true,
+        });
+
+        // (Menu button removed) - header will only contain the centered drag handle
+
+        // Spacer to help center the drag handle
+        const leftSpacer = new St.Widget({ x_expand: true });
+
+        // Center drag handle with bar indicator
+        const dragHandle = new St.Widget({
+            style_class: 'emoji-picker-drag-handle',
+            reactive: true,
+            track_hover: true,
+        });
+
+        const rightSpacer = new St.Widget({ x_expand: true });
+
+        // (Close button removed)
+
+    headerBox.add_child(leftSpacer);
+    headerBox.add_child(dragHandle);
+    headerBox.add_child(rightSpacer);
+
+        container.add_child(headerBox);
 
         // Get categories
         const categories = collectCategories(this.#emojiData);
@@ -234,6 +307,9 @@ export default class EmojiPickerExtension extends Extension {
             style_class: 'emoji-grid',
             x_expand: true,
         });
+
+        // Apply layout class based on emojis per row
+        this.#emojiGrid.add_style_class_name(`emoji-layout-${dimensions.emojisPerRow}`);
 
         this.#scrollView.set_child(this.#emojiGrid);
 
@@ -258,15 +334,20 @@ export default class EmojiPickerExtension extends Extension {
             this.#applyFilter(query);
         });
 
-        // Initialize emoji renderer
-        this.#emojiRenderer = new EmojiRenderer(this.#emojiGrid, (item) => {
-            this.#handleEmojiSelected(item);
-        });
+        // Initialize emoji renderer with dynamic emojis per row
+        const popupDims = this.#getPopupDimensions();
+        this.#emojiRenderer = new EmojiRenderer(
+            this.#emojiGrid,
+            (item) => {
+                this.#handleEmojiSelected(item);
+            },
+            popupDims.emojisPerRow
+        );
 
-        // Build layout
-        container.add_child(categoryTabs);
-        container.add_child(this.#searchEntry);
-        container.add_child(this.#scrollView);
+    // Build layout: search bar first, then category tabs, then the scrollable grid
+    container.add_child(this.#searchEntry);
+    container.add_child(categoryTabs);
+    container.add_child(this.#scrollView);
 
         // Create popup
         this.#popup = new St.Widget({
@@ -279,11 +360,99 @@ export default class EmojiPickerExtension extends Extension {
         this.#popup.add_child(container);
         Main.layoutManager.addChrome(this.#popup);
 
+        // Add drag functionality to the handle
+        this.#setupDragHandle(dragHandle);
+
         // Apply theme
         this.#applyTheme();
 
         // Initial render
         this.#renderEmojisByCategory();
+    }
+
+    /**
+     * Setup drag functionality for the handle
+     * @param {St.Widget} dragHandle - The drag handle widget
+     */
+    #setupDragHandle(dragHandle) {
+        // Use stage-level listeners so dragging continues even if the cursor leaves the handle
+        let dragging = false;
+        let startX = 0;
+        let startY = 0;
+        let popupStartX = 0;
+        let popupStartY = 0;
+        let stageMotionId = 0;
+        let stageReleaseId = 0;
+
+        const beginDrag = (x, y) => {
+            startX = x;
+            startY = y;
+            [popupStartX, popupStartY] = this.#popup.get_position();
+            dragging = true;
+            dragHandle.add_style_class_name('dragging');
+
+            // Connect stage motion and release so we continue to receive events
+            if (global.stage && !stageMotionId) {
+                stageMotionId = global.stage.connect('motion-event', (_actor, event) => {
+                    const [cx, cy] = event.get_coords ? event.get_coords() : global.get_pointer();
+                    const deltaX = cx - startX;
+                    const deltaY = cy - startY;
+                    this.#popup.set_position(popupStartX + deltaX, popupStartY + deltaY);
+                    return Clutter.EVENT_STOP;
+                });
+            }
+
+            if (global.stage && !stageReleaseId) {
+                stageReleaseId = global.stage.connect('button-release-event', () => {
+                    endDrag();
+                    return Clutter.EVENT_STOP;
+                });
+            }
+        };
+
+        const endDrag = () => {
+            dragging = false;
+            if (stageMotionId && global.stage) {
+                try { global.stage.disconnect(stageMotionId); } catch (e) {}
+                stageMotionId = 0;
+            }
+            if (stageReleaseId && global.stage) {
+                try { global.stage.disconnect(stageReleaseId); } catch (e) {}
+                stageReleaseId = 0;
+            }
+            try { dragHandle.remove_style_class_name('dragging'); } catch (e) {}
+        };
+
+        dragHandle.connect('button-press-event', (_actor, event) => {
+            if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
+
+            const [x, y] = event.get_coords ? event.get_coords() : global.get_pointer();
+            beginDrag(x, y);
+
+            return Clutter.EVENT_STOP;
+        });
+
+        // Also support touch / gesture release on the handle itself as a fallback
+        dragHandle.connect('button-release-event', () => {
+            endDrag();
+            return Clutter.EVENT_STOP;
+        });
+    }
+
+    /**
+     * Handle drag motion
+     */
+    #onDragMotion(startX, startY, popupStartX, popupStartY) {
+        const [currentX, currentY] = global.get_pointer();
+        const deltaX = currentX - startX;
+        const deltaY = currentY - startY;
+
+        this.#popup.set_position(
+            popupStartX + deltaX,
+            popupStartY + deltaY
+        );
+
+        return true;
     }
 
     /**
@@ -343,6 +512,24 @@ export default class EmojiPickerExtension extends Extension {
                 this.#categoryManager.registerSection(category, section);
             }
         );
+    }
+
+    /**
+     * Handle popup size change
+     * When user changes size mode, rebuild the popup
+     *
+     * @param {{width: number, height: number}} dimensions
+     */
+    #onPopupSizeChange(dimensions) {
+        log(`emoji-picker: Popup size changed to ${dimensions.width}x${dimensions.height}, emojis per row: ${dimensions.emojisPerRow}`);
+        if (this.#popup) {
+            this.#destroyPopup();
+            this.#buildPopup();
+            
+            // Apply the appropriate emoji layout CSS class based on emojis per row
+            const layoutClass = `emoji-layout-${dimensions.emojisPerRow}`;
+            this.#emojiGrid.add_style_class_name(layoutClass);
+        }
     }
 
     /**
@@ -444,7 +631,8 @@ export default class EmojiPickerExtension extends Extension {
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         });
 
-        this.#ensureStageMonitor();
+        // Note: Stage monitor disabled - popup only closes via close button
+        // this.#ensureStageMonitor();
     }
 
     /**

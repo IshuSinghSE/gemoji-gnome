@@ -195,6 +195,8 @@ export class CategoryManager {
         this.updateCategoryStates();
         
         // Scroll to the category section after a small delay to ensure layout is ready
+        // Use a programmatic scroll flag so the scroll listener doesn't override
+        // the user-initiated category selection.
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, CATEGORY_SCROLL_DELAY, () => {
             const section = this.#categorySections.get(category);
             if (section) {
@@ -205,17 +207,27 @@ export class CategoryManager {
                             this.#scrollAdjustment = this.#scrollView.vadjustment;
                         }
                     }
-                    
+
                     if (this.#scrollAdjustment) {
+                        // Mark programmatic scroll so #onScroll ignores it
+                        this.#programmaticScroll = true;
+
                         // Get the position of the category header
                         const allocation = section.get_allocation_box();
                         const sectionY = allocation.y1;
-                        
+
                         // Scroll to that position
                         this.#scrollAdjustment.set_value(Math.max(0, sectionY - 10));
+
+                        // Clear the flag shortly after to resume normal scroll handling
+                        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+                            this.#programmaticScroll = false;
+                            return GLib.SOURCE_REMOVE;
+                        });
                     }
                 } catch (e) {
                     log(`emoji-picker: error scrolling to category: ${e}`);
+                    this.#programmaticScroll = false;
                 }
             }
             return GLib.SOURCE_REMOVE;

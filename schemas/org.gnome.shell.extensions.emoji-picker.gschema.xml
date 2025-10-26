@@ -31,5 +31,65 @@
       <summary>Use keybind</summary>
       <description>Enable your default keybind to open the emoji menu</description>
     </key>
+    <key name="skin-tones-disabled" type="b">
+      <default>false</default>
+      <summary>Disable skin tones</summary>
+      <description>Hide skin tone selector for emojis</description>
+    </key>
+    <key name="search-disabled" type="b">
+      <default>false</default>
+      <summary>Disable search</summary>
+      <description>Hide search functionality</description>
+    </key>
+    <key name="search-placeholder" type="s">
+      <default>'Search'</default>
+      <summary>Search placeholder text</summary>
+      <description>Placeholder text shown in search field</description>
+    </key>
+    <key name="emoji-style" type="s">
+      <default>'native'</default>
+      <summary>Emoji style</summary>
+      <description>Style of emojis to display: native, apple, google, twitter, emojipedia</description>
+    </key>
+    <key name="theme" type="s">
+      <default>'auto'</default>
+      <summary>Theme preference</summary>
+      <description>Theme: auto, light, dark, custom</description>
+    </key>
+    <key name="suggestion-mode" type="s">
+      <default>'recent'</default>
+      <summary>Suggestion mode</summary>
+      <description>How to suggest emojis: recent, frequent, trending</description>
+    </key>
+    <key name="popup-size-mode" type="s">
+      <default>'default'</default>
+      <summary>Popup size mode</summary>
+      <description>Size preset for emoji picker: compact, default, custom</description>
+    </key>
+    <key name="popup-width" type="i">
+      <default>420</default>
+      <summary>Popup width</summary>
+      <description>Width of the emoji picker popup in pixels (used when size-mode is custom)</description>
+    </key>
+    <key name="popup-height" type="i">
+      <default>600</default>
+      <summary>Popup height</summary>
+      <description>Height of the emoji picker popup in pixels (used when size-mode is custom)</description>
+    </key>
+    <key name="skin-tone-location" type="s">
+      <default>'search'</default>
+      <summary>Skin tone picker location</summary>
+      <description>Where to show skin tone selector: search, top, bottom</description>
+    </key>
+    <key name="custom-emojis-enabled" type="b">
+      <default>false</default>
+      <summary>Enable custom emojis</summary>
+      <description>Allow adding custom emoji shortcuts</description>
+    </key>
+    <key name="reactions-enabled" type="b">
+      <default>false</default>
+      <summary>Enable reactions</summary>
+      <description>Show reaction shortcuts</description>
+    </key>
   </schema>
 </schemalist>

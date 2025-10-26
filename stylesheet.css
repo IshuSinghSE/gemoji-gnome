@@ -1,146 +1,290 @@
 /* Base popup layout */
 .emoji-picker-popup {
-    min-width: 360px;
-    max-width: 520px;
-    padding: 0;
-    border-radius: 12px;
+  padding: 0;
+  border-radius: 12px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Header with drag handle and buttons */
+/* ==========================
+       emoji-picker stylesheet
+       - reorganized & simplified
+       Sections:
+         1) Base
+         2) Themes
+         3) Header & drag-handle
+         4) Category tabs
+         5) Search
+         6) Scroll / Grid / Rows
+         7) Layout modes
+         8) Category buttons
+       ========================== */
+
+/* 1) Base */
+.emoji-picker-popup {
+  padding: 0;
+  border-radius: 12px;
+  width: 100%;
+  height: 100%;
 }
 
 .emoji-picker-base {
-    padding: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Custom aesthetic theme */
+/* 2) Themes */
 .emoji-picker-custom-theme {
-    background-color: rgba(30, 30, 40, 0.95);
-    border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-    border: 1px solid rgba(255,255,255,0.06);
+  background-color: rgba(30, 30, 40, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Category tabs (like EmojiMart) */
+.emoji-picker-native-theme {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* 3) Header & drag-handle */
+.emoji-picker-header {
+  height: 32px;
+  border-radius: 12px 12px 0 0;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 8px;
+}
+
+/* container is roomy so the visible thumb is easy to hit */
+.emoji-picker-drag-handle {
+  width: 160px;
+  height: 6px;
+  margin: 12px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.45);
+  transition: background-color 200ms ease, transform 120ms ease;
+}
+
+.emoji-picker-drag-handle::before {
+  /* visible thumb: slim, pill-shaped like a scrollbar thumb */
+  content: "";
+  width: 56px;
+  height: 6px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.85)
+  );
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) inset,
+    0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: background 120ms ease, transform 100ms ease, opacity 100ms ease;
+  display: inline-block;
+}
+
+.emoji-picker-drag-handle:hover::before {
+  opacity: 1;
+  transform: translateY(-0.5px);
+}
+
+.emoji-picker-drag-handle:active::before,
+.emoji-picker-drag-handle.dragging::before {
+  transform: translateY(0.5px) scale(0.995);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.78)
+  );
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) inset,
+    0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* 4) Category tabs (icons row) */
 .emoji-category-tabs {
-    padding: 6px 8px;
-    gap: 2px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 8px 12px;
+  gap: 8px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-height: 50px;
+  justify-content: space-evenly;
 }
 
 .emoji-category-tab {
-    min-width: 32px;
-    max-width: 32px;
-    min-height: 32px;
-    max-height: 32px;
-    border-radius: 6px;
-    background: transparent;
-    padding: 4px;
-    margin: 0;
-    border-bottom: 2px solid transparent;
-    transition: all 120ms ease;
-}
-
-.emoji-category-tab:hover,
-.emoji-category-tab:focus {
-    background-color: rgba(255,255,255,0.08);
-}
-
-.emoji-category-tab.active {
-    border-bottom-color: #0ea5e9;
-    background-color: rgba(14, 165, 233, 0.1);
+  min-width: 32px;
+  min-height: 32px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: transparent;
+  padding: 4px;
+  margin: 0;
+  transition: all 120ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .emoji-category-icon {
-    color: rgba(255,255,255,0.7);
-    width: 18px;
-    height: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 120ms ease, background-color 120ms ease,
+    transform 120ms ease;
 }
 
+/* Hover: circular background on the icon */
 .emoji-category-tab:hover .emoji-category-icon,
 .emoji-category-tab:focus .emoji-category-icon {
-    color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.08);
+  width: 28px;
+  height: 28px;
+}
+
+/* Active: only tint the symbol */
+.emoji-category-tab.active {
+  background: transparent;
 }
 
 .emoji-category-tab.active .emoji-category-icon {
-    color: #0ea5e9;
+  color: #0ea5e9;
+  background: transparent;
+  width: 24px;
+  height: 24px;
 }
 
-.emoji-picker-custom-theme .search-entry {
-    background-color: rgba(255,255,255,0.06);
-    color: #eee;
-    border-radius: 8px;
-    padding: 10px 14px;
-    margin: 12px;
-    margin-bottom: 8px;
-    border: 1px solid transparent;
+/* 5) Search */
+.emoji-search-entry {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: #eee;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 10px 12px;
+  border: 1px solid transparent;
+  font-size: 14px;
 }
 
+/* 6) Scroll / Grid / Rows */
 .emoji-scroll {
-    max-height: 480px;
-    min-height: 420px;
-    background-color: rgba(255, 255, 255, 0.02);
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.02);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .emoji-grid {
-    padding: 8px;
+  padding: 8px 8px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .emoji-category-header {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.6);
-    padding: 12px 8px 8px 8px;
-    margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 8px 12px;
+  margin: 0;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: rgba(30, 30, 40, 0.95);
 }
 
 .emoji-row {
-    gap: 4px;
-    margin-bottom: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 0;
 }
 
 .emoji-button {
-    min-width: 40px;
-    min-height: 40px;
-    border-radius: 8px;
-    background: transparent;
-    font-size: 28px;
-    padding: 6px;
-    transition: background-color 120ms ease;
+  /* default: 11-per-row spacing */
+  flex: 0 0 calc(9.0909% - 1.8182px);
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 32px;
+  padding: 0;
+  transition: background-color 120ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: calc(9.0909% - 1.8182px);
 }
 
 .emoji-button:hover,
 .emoji-button:focus {
-    background-color: rgba(255,255,255,0.12);
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
+/* 7) Layout modes */
+.emoji-layout-7 .emoji-button {
+  flex: 0 0 calc(14.2857% - 1.7143px);
+  max-width: calc(14.2857% - 1.7143px);
+  font-size: 26px;
+}
+
+.emoji-layout-11 .emoji-button {
+  flex: 0 0 calc(9.0909% - 1.8182px);
+  max-width: calc(9.0909% - 1.8182px);
+  font-size: 32px;
+}
+
+.emoji-layout-14 .emoji-button {
+  flex: 0 0 calc(7.1429% - 1.8571px);
+  max-width: calc(7.1429% - 1.8571px);
+  font-size: 28px;
+}
+
+/* 8) Category / action buttons (small circular controls) */
 .emoji-category-scroll {
-    max-height: 52px;
+  max-height: 52px;
 }
 
 .emoji-category-bar {
-    padding: 4px 0;
+  padding: 4px 0;
 }
 
 .emoji-category-button {
-    min-width: 42px;
-    min-height: 42px;
-    border-radius: 10px;
-    background: transparent;
-    font-size: 18px;
-    padding: 6px;
-    transition: background-color 120ms ease;
+  min-width: 42px;
+  min-height: 42px;
+  border-radius: 24px;
+  background: transparent;
+  font-size: 18px;
+  padding: 6px;
+  transition: background-color 120ms ease;
 }
 
 .emoji-category-button:hover,
 .emoji-category-button:focus {
-    background-color: rgba(255,255,255,0.08);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .emoji-category-button.active {
-    background-color: rgba(255,255,255,0.18);
+  background-color: rgba(255, 255, 255, 0.18);
 }
 
-/* Native theme: no colors, let the Shell style it */
-.emoji-picker-native-theme {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-}
+/* end of stylesheet */
