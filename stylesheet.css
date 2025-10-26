@@ -19,30 +19,47 @@
 
 /* Drag handle (center bar) */
 .emoji-picker-drag-handle {
-    width: 200px;
-    height: 24px;
+    /* container stays roomy so the handle is easy to click; the visible bar is the ::before element */
+    width: 160px;
+    height: 6px;
+    margin: 12px 0px;
     cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 4px;
-    transition: background-color 120ms ease;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.45);
+    transition: background-color 300ms ease, transform 120ms ease;
 }
 
 .emoji-picker-drag-handle::before {
+    /* Visible handle: make it look like a slim scrollbar thumb (pill-shaped), a bit longer */
     content: '';
-    width: 40px;
-    height: 4px;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
+    width: 56px; /* slightly longer than before */
+    height: 6px; /* slim thumb */
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+    border-radius: 999px; /* fully pill-shaped */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.45) inset, 0 1px 0 rgba(255,255,255,0.06);
+    transition: background 120ms ease, transform 100ms ease, opacity 100ms ease;
+    display: inline-block;
 }
 
 .emoji-picker-drag-handle:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.4);
 }
 
+/* Slightly reduce handle opacity on hover to feel interactive */
 .emoji-picker-drag-handle:hover::before {
-    background-color: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+    transform: translateY(-0.5px);
+}
+
+/* Active/pressed: give a subtle scale and darker tone while dragging */
+.emoji-picker-drag-handle:active::before,
+.emoji-picker-drag-handle.dragging::before {
+    transform: translateY(0.5px) scale(0.995);
+    background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.78));
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5) inset, 0 1px 0 rgba(255,255,255,0.04);
 }
 
 /* Header buttons container */
@@ -66,6 +83,7 @@
     font-size: 18px;
     color: rgba(255, 255, 255, 0.7);
     font-weight: 600;
+    background-color: #0ea5e9;
 }
 
 .emoji-picker-header-button:hover,

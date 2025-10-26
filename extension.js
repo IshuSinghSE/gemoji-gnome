@@ -411,39 +411,66 @@ export default class EmojiPickerExtension extends Extension {
      * @param {St.Widget} dragHandle - The drag handle widget
      */
     #setupDragHandle(dragHandle) {
+        // Use stage-level listeners so dragging continues even if the cursor leaves the handle
         let dragging = false;
         let startX = 0;
         let startY = 0;
         let popupStartX = 0;
         let popupStartY = 0;
+        let stageMotionId = 0;
+        let stageReleaseId = 0;
 
-        dragHandle.connect('button-press-event', (actor, event) => {
-            if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
-
-            [startX, startY] = event.get_coords();
+        const beginDrag = (x, y) => {
+            startX = x;
+            startY = y;
             [popupStartX, popupStartY] = this.#popup.get_position();
             dragging = true;
+            dragHandle.add_style_class_name('dragging');
 
-            return Clutter.EVENT_STOP;
-        });
+            // Connect stage motion and release so we continue to receive events
+            if (global.stage && !stageMotionId) {
+                stageMotionId = global.stage.connect('motion-event', (_actor, event) => {
+                    const [cx, cy] = event.get_coords ? event.get_coords() : global.get_pointer();
+                    const deltaX = cx - startX;
+                    const deltaY = cy - startY;
+                    this.#popup.set_position(popupStartX + deltaX, popupStartY + deltaY);
+                    return Clutter.EVENT_STOP;
+                });
+            }
 
-        dragHandle.connect('button-release-event', () => {
+            if (global.stage && !stageReleaseId) {
+                stageReleaseId = global.stage.connect('button-release-event', () => {
+                    endDrag();
+                    return Clutter.EVENT_STOP;
+                });
+            }
+        };
+
+        const endDrag = () => {
             dragging = false;
+            if (stageMotionId && global.stage) {
+                try { global.stage.disconnect(stageMotionId); } catch (e) {}
+                stageMotionId = 0;
+            }
+            if (stageReleaseId && global.stage) {
+                try { global.stage.disconnect(stageReleaseId); } catch (e) {}
+                stageReleaseId = 0;
+            }
+            try { dragHandle.remove_style_class_name('dragging'); } catch (e) {}
+        };
+
+        dragHandle.connect('button-press-event', (_actor, event) => {
+            if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
+
+            const [x, y] = event.get_coords ? event.get_coords() : global.get_pointer();
+            beginDrag(x, y);
+
             return Clutter.EVENT_STOP;
         });
 
-        dragHandle.connect('motion-event', (actor, event) => {
-            if (!dragging) return Clutter.EVENT_PROPAGATE;
-
-            const [currentX, currentY] = event.get_coords();
-            const deltaX = currentX - startX;
-            const deltaY = currentY - startY;
-
-            this.#popup.set_position(
-                popupStartX + deltaX,
-                popupStartY + deltaY
-            );
-
+        // Also support touch / gesture release on the handle itself as a fallback
+        dragHandle.connect('button-release-event', () => {
+            endDrag();
             return Clutter.EVENT_STOP;
         });
     }
