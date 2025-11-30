@@ -8,7 +8,6 @@
  */
 
 import GLib from 'gi://GLib';
-import Gio from 'gi://Gio';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
@@ -17,6 +16,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 export class ClipboardManager {
     #clipboard;
     #settings;
+    #timeoutIds = new Set();
 
     /**
      * @param {Gio.Settings} settings
@@ -24,6 +24,24 @@ export class ClipboardManager {
     constructor(settings) {
         this.#settings = settings;
         this.#clipboard = St.Clipboard.get_default();
+    }
+
+    /**
+     * Add a timeout and track it
+     * @param {number} interval
+     * @param {Function} callback
+     * @returns {number}
+     */
+    #addTimeout(interval, callback) {
+        const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, interval, () => {
+            const result = callback();
+            if (result === GLib.SOURCE_REMOVE) {
+                this.#timeoutIds.delete(id);
+            }
+            return result;
+        });
+        this.#timeoutIds.add(id);
+        return id;
     }
 
     /**
@@ -48,40 +66,17 @@ export class ClipboardManager {
         }
 
         // Try different paste methods
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-            // Method 1: Try using xdotool
-            if (this.#tryXdotoolPaste()) {
-                return GLib.SOURCE_REMOVE;
-            }
-
-            // Method 2: Try virtual keyboard
+        this.#addTimeout(100, () => {
+            // Method 1: Try virtual keyboard
             if (this.#tryVirtualKeyboardPaste()) {
                 return GLib.SOURCE_REMOVE;
             }
 
-            // Method 3: Try direct Meta paste
+            // Method 2: Try direct Meta paste
             this.#tryMetaPaste();
 
             return GLib.SOURCE_REMOVE;
         });
-    }
-
-    /**
-     * Try pasting using xdotool
-     *
-     * @returns {boolean} Success
-     */
-    #tryXdotoolPaste() {
-        try {
-            const [, , , exitStatus] = GLib.spawn_command_line_sync('which xdotool');
-            if (exitStatus === 0) {
-                GLib.spawn_command_line_async('xdotool key --clearmodifiers ctrl+v');
-                return true;
-            }
-        } catch (e) {
-            // xdotool not available
-        }
-        return false;
     }
 
     /**
@@ -121,7 +116,7 @@ export class ClipboardManager {
                 return true;
             }
         } catch (e) {
-            log(`emoji-picker: virtual keyboard paste failed: ${e}`);
+            console.log(`emoji-picker: virtual keyboard paste failed: ${e}`);
         }
         return false;
     }
@@ -140,7 +135,7 @@ export class ClipboardManager {
                 });
             }
         } catch (e) {
-            log(`emoji-picker: Meta paste failed: ${e}`);
+            console.log(`emoji-picker: Meta paste failed: ${e}`);
         }
     }
 
@@ -151,5 +146,20 @@ export class ClipboardManager {
      */
     showToast(message) {
         Main.notify('Emoji Picker', message);
+    }
+
+    /**
+     * Destroy manager
+     */
+    destroy() {
+        // Clear all timeouts
+        for (const id of this.#timeoutIds) {
+            if (id) {
+                GLib.source_remove(id);
+            }
+        }
+        this.#timeoutIds.clear();
+        this.#settings = null;
+        this.#clipboard = null;
     }
 }

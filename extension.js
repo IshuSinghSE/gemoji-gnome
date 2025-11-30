@@ -7,8 +7,6 @@
  */
 
 import Clutter from 'gi://Clutter';
-import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -17,7 +15,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 // Import our modules
-import { POPUP_WIDTH, POPUP_HEIGHT, POPUP_SIZE_MODES } from './core/constants.js';
+import { POPUP_SIZE_MODES } from './core/constants.js';
 import { loadEmojiData, collectCategories } from './core/emojiData.js';
 import { UsageTracker } from './core/usageTracker.js';
 import { KeybindingManager } from './core/keybindingManager.js';
@@ -171,16 +169,32 @@ export default class EmojiPickerExtension extends Extension {
             this.#popupSizeManager = null;
         }
 
+        if (this.#usageTracker) {
+            this.#usageTracker.destroy();
+            this.#usageTracker = null;
+        }
+
+        if (this.#clipboardManager) {
+            this.#clipboardManager.destroy();
+            this.#clipboardManager = null;
+        }
+
+        if (this.#categoryManager) {
+            this.#categoryManager.destroy();
+            this.#categoryManager = null;
+        }
+
+        if (this.#emojiRenderer) {
+            // this.#emojiRenderer.destroy(); // EmojiRenderer doesn't need destroy
+            this.#emojiRenderer = null;
+        }
+
         // Cleanup UI
         this.#destroyPopup();
         this.#removePanelButton();
         this.#disconnectStageMonitor();
 
         // Clear references
-        this.#usageTracker = null;
-        this.#clipboardManager = null;
-        this.#categoryManager = null;
-        this.#emojiRenderer = null;
         this.#settings = null;
         this.#emojiData = [];
     }
@@ -197,18 +211,18 @@ export default class EmojiPickerExtension extends Extension {
 
         const icon = new St.Icon({
             icon_name: 'face-smile-symbolic',
-            style_class: 'system-status-icon',
+            style_class: 'system-status-icon'
         });
 
         this.#button.add_child(icon);
 
         // Direct click handler fallback in case menu events are not firing
-        this.#button.connect('button-press-event', (_actor, event) => {
+        this.#button.connect('button-press-event', () => {
             try {
-                log('emoji-picker: panel button clicked (button-press-event)');
+                console.log('emoji-picker: panel button clicked (button-press-event)');
                 this.#togglePopup();
             } catch (e) {
-                log(`emoji-picker: error in panel click handler: ${e}`);
+                console.log(`emoji-picker: error in panel click handler: ${e}`);
             }
             return Clutter.EVENT_STOP;
         });
@@ -217,7 +231,7 @@ export default class EmojiPickerExtension extends Extension {
         if (this.#button.menu) {
             this.#button.menu.connect('open-state-changed', (menu, open) => {
                 if (open) {
-                    log('emoji-picker: Menu opened, showing popup');
+                    console.log('emoji-picker: Menu opened, showing popup');
                     menu.close(false);  // Close the menu immediately
                     this.#togglePopup();
                 }
@@ -241,13 +255,13 @@ export default class EmojiPickerExtension extends Extension {
      * Build popup UI
      */
     #buildPopup() {
-        log('emoji-picker: Starting #buildPopup');
+        console.log('emoji-picker: Starting #buildPopup');
         if (this.#popup) {
-            log('emoji-picker: Popup already exists');
+            console.log('emoji-picker: Popup already exists');
             return;
         }
 
-        log('emoji-picker: Creating popup container');
+        console.log('emoji-picker: Creating popup container');
         // Get dimensions based on size mode
         const dimensions = this.#getPopupDimensions();
         
@@ -256,13 +270,13 @@ export default class EmojiPickerExtension extends Extension {
             vertical: true,
             style_class: 'emoji-picker-popup',
             width: dimensions.width,
-            height: dimensions.height,
+            height: dimensions.height
         });
 
         // Add drag handle header with buttons
         const headerBox = new St.BoxLayout({
             style_class: 'emoji-picker-header',
-            x_expand: true,
+            x_expand: true
         });
 
         // (Menu button removed) - header will only contain the centered drag handle
@@ -274,22 +288,22 @@ export default class EmojiPickerExtension extends Extension {
         const dragHandle = new St.Widget({
             style_class: 'emoji-picker-drag-handle',
             reactive: true,
-            track_hover: true,
+            track_hover: true
         });
 
         const rightSpacer = new St.Widget({ x_expand: true });
 
         // (Close button removed)
 
-    headerBox.add_child(leftSpacer);
-    headerBox.add_child(dragHandle);
-    headerBox.add_child(rightSpacer);
+        headerBox.add_child(leftSpacer);
+        headerBox.add_child(dragHandle);
+        headerBox.add_child(rightSpacer);
 
         container.add_child(headerBox);
 
         // Get categories
         const categories = collectCategories(this.#emojiData);
-        log(`emoji-picker: Categories for tabs: ${JSON.stringify(categories)}`);
+        console.log(`emoji-picker: Categories for tabs: ${JSON.stringify(categories)}`);
 
         // Create scroll view for emoji grid
         this.#scrollView = new St.ScrollView({
@@ -298,14 +312,14 @@ export default class EmojiPickerExtension extends Extension {
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
             overlay_scrollbars: true,
             x_expand: true,
-            y_expand: true,
+            y_expand: true
         });
 
         // Create emoji grid
         this.#emojiGrid = new St.BoxLayout({
             vertical: true,
             style_class: 'emoji-grid',
-            x_expand: true,
+            x_expand: true
         });
 
         // Apply layout class based on emojis per row
@@ -316,6 +330,7 @@ export default class EmojiPickerExtension extends Extension {
         // Initialize category manager
         this.#categoryManager = new CategoryManager(this.#scrollView, (category) => {
             // Category changed callback (if needed)
+            console.log(`emoji-picker: Switched to category: ${category}`);
         });
 
         // Create category tabs
@@ -326,7 +341,7 @@ export default class EmojiPickerExtension extends Extension {
             style_class: 'emoji-search-entry',
             hint_text: 'Search emojis...',
             can_focus: true,
-            x_expand: true,
+            x_expand: true
         });
 
         // Initialize search manager
@@ -344,17 +359,17 @@ export default class EmojiPickerExtension extends Extension {
             popupDims.emojisPerRow
         );
 
-    // Build layout: search bar first, then category tabs, then the scrollable grid
-    container.add_child(this.#searchEntry);
-    container.add_child(categoryTabs);
-    container.add_child(this.#scrollView);
+        // Build layout: search bar first, then category tabs, then the scrollable grid
+        container.add_child(this.#searchEntry);
+        container.add_child(categoryTabs);
+        container.add_child(this.#scrollView);
 
         // Create popup
         this.#popup = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
             reactive: true,
             can_focus: true,
-            visible: false,
+            visible: false
         });
 
         this.#popup.add_child(container);
@@ -376,7 +391,6 @@ export default class EmojiPickerExtension extends Extension {
      */
     #setupDragHandle(dragHandle) {
         // Use stage-level listeners so dragging continues even if the cursor leaves the handle
-        let dragging = false;
         let startX = 0;
         let startY = 0;
         let popupStartX = 0;
@@ -413,14 +427,20 @@ export default class EmojiPickerExtension extends Extension {
         const endDrag = () => {
             dragging = false;
             if (stageMotionId && global.stage) {
-                try { global.stage.disconnect(stageMotionId); } catch (e) {}
+                try { global.stage.disconnect(stageMotionId); } catch (e) {
+                    console.log('emoji-picker: failed to disconnect stage motion event: ' + e);
+                }
                 stageMotionId = 0;
             }
             if (stageReleaseId && global.stage) {
-                try { global.stage.disconnect(stageReleaseId); } catch (e) {}
+                try { global.stage.disconnect(stageReleaseId); } catch (e) {
+                    console.log('emoji-picker: failed to disconnect stage release event: ' + e);
+                }
                 stageReleaseId = 0;
             }
-            try { dragHandle.remove_style_class_name('dragging'); } catch (e) {}
+            try { dragHandle.remove_style_class_name('dragging'); } catch (e) {
+                console.log('emoji-picker: failed to remove dragging style class: ' + e);
+            }
         };
 
         dragHandle.connect('button-press-event', (_actor, event) => {
@@ -521,7 +541,7 @@ export default class EmojiPickerExtension extends Extension {
      * @param {{width: number, height: number}} dimensions
      */
     #onPopupSizeChange(dimensions) {
-        log(`emoji-picker: Popup size changed to ${dimensions.width}x${dimensions.height}, emojis per row: ${dimensions.emojisPerRow}`);
+        console.log(`emoji-picker: Popup size changed to ${dimensions.width}x${dimensions.height}, emojis per row: ${dimensions.emojisPerRow}`);
         if (this.#popup) {
             this.#destroyPopup();
             this.#buildPopup();
@@ -583,12 +603,12 @@ export default class EmojiPickerExtension extends Extension {
      * @param {boolean} forceHide
      */
     #togglePopup(forceHide = false) {
-        log(`emoji-picker: #togglePopup called, forceHide=${forceHide}, popup=${this.#popup ? 'exists' : 'null'}`);
+        console.log(`emoji-picker: #togglePopup called, forceHide=${forceHide}, popup=${this.#popup ? 'exists' : 'null'}`);
         
         // Handle forceHide
         if (forceHide) {
             if (this.#popup && this.#popup.visible) {
-                log('emoji-picker: Hiding popup (forced)');
+                console.log('emoji-picker: Hiding popup (forced)');
                 this.#hidePopup();
             }
             return;
@@ -596,10 +616,10 @@ export default class EmojiPickerExtension extends Extension {
 
         // If popup doesn't exist or is hidden, show it
         if (!this.#popup || !this.#popup.visible) {
-            log('emoji-picker: Showing popup');
+            console.log('emoji-picker: Showing popup');
             this.#showPopup();
         } else {
-            log('emoji-picker: Popup is visible, hiding');
+            console.log('emoji-picker: Popup is visible, hiding');
             this.#hidePopup();
         }
     }
@@ -608,13 +628,13 @@ export default class EmojiPickerExtension extends Extension {
      * Show popup
      */
     #showPopup() {
-        log('emoji-picker: #showPopup called');
+        console.log('emoji-picker: #showPopup called');
         if (!this.#popup) {
-            log('emoji-picker: Building popup...');
+            console.log('emoji-picker: Building popup...');
             this.#buildPopup();
         }
 
-        log('emoji-picker: Showing popup');
+        console.log('emoji-picker: Showing popup');
         this.#repositionPopup();
         this.#popup.opacity = 0;
         this.#popup.show();
@@ -628,7 +648,7 @@ export default class EmojiPickerExtension extends Extension {
         this.#popup.ease({
             opacity: 255,
             duration: 120,
-            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD
         });
 
         // Note: Stage monitor disabled - popup only closes via close button
@@ -658,7 +678,7 @@ export default class EmojiPickerExtension extends Extension {
                     this.#popup.hide();
                     this.#popup.opacity = 255;
                 }
-            },
+            }
         });
 
         this.#disconnectStageMonitor();

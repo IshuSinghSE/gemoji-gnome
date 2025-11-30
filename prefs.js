@@ -10,7 +10,6 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -44,32 +43,25 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
 
-        // Create main preferences window
-        const header_bar = new Adw.HeaderBar();
-        window.set_titlebar(header_bar);
-
         // Create view stack for multiple pages
         const stack = new Adw.ViewStack();
-        const stack_switcher = new Adw.ViewStackPage({
-            child: stack,
-            title: 'Emoji Picker Settings',
-        });
+
 
         // Page 1: General Settings
         const generalPage = new Adw.PreferencesPage({
             title: 'General',
-            icon_name: 'general-symbolic',
+            icon_name: 'general-symbolic'
         });
 
         const generalGroup = new Adw.PreferencesGroup({
             title: 'General Settings',
-            description: 'Configure basic extension settings.',
+            description: 'Configure basic extension settings.'
         });
 
         // Show Indicator
         const showIndicatorRow = new Adw.SwitchRow({
             title: 'Show Indicator',
-            subtitle: 'Show emoji picker icon in top panel',
+            subtitle: 'Show emoji picker icon in top panel'
         });
         settings.bind(
             'show-indicator',
@@ -82,7 +74,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Use Keybind
         const useKeybindRow = new Adw.SwitchRow({
             title: 'Use Keybind',
-            subtitle: 'Enable global keyboard shortcut',
+            subtitle: 'Enable global keyboard shortcut'
         });
         settings.bind(
             'use-keybind',
@@ -94,7 +86,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
 
         // Emoji Copy Keybind Entry
         const keybindRow = new Adw.ActionRow({
-            title: 'Emoji Picker Keybind',
+            title: 'Emoji Picker Keybind'
         });
 
         const keybindLabel = new Gtk.Label({
@@ -102,12 +94,12 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
             margin_top: 6,
             margin_bottom: 6,
             margin_start: 6,
-            margin_end: 6,
+            margin_end: 6
         });
 
         const keybindButton = new Gtk.Button({
             child: keybindLabel,
-            valign: Gtk.Align.CENTER,
+            valign: Gtk.Align.CENTER
         });
 
         keybindButton.connect('clicked', () => {
@@ -121,7 +113,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Paste on Select
         const pasteOnSelectRow = new Adw.SwitchRow({
             title: 'Paste on Select',
-            subtitle: 'Automatically paste selected emoji at cursor',
+            subtitle: 'Automatically paste selected emoji at cursor'
         });
         settings.bind(
             'paste-on-select',
@@ -136,12 +128,12 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Page 2: Appearance
         const appearancePage = new Adw.PreferencesPage({
             title: 'Appearance',
-            icon_name: 'appearance-symbolic',
+            icon_name: 'appearance-symbolic'
         });
 
         const appearanceGroup = new Adw.PreferencesGroup({
             title: 'Look & Feel',
-            description: 'Customize the appearance of the emoji picker.',
+            description: 'Customize the appearance of the emoji picker.'
         });
 
         // Theme
@@ -149,8 +141,8 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
             title: 'Theme',
             subtitle: 'Select color scheme',
             model: new Gtk.StringList({
-                strings: ['Auto', 'Light', 'Dark', 'Custom'],
-            }),
+                strings: ['Auto', 'Light', 'Dark', 'Custom']
+            })
         });
         const themeValues = ['auto', 'light', 'dark', 'custom'];
         const currentTheme = settings.get_string('theme');
@@ -163,7 +155,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Custom Theme
         const useCustomThemeRow = new Adw.SwitchRow({
             title: 'Use Custom Theme',
-            subtitle: 'Override GNOME Shell theme',
+            subtitle: 'Override GNOME Shell theme'
         });
         settings.bind(
             'use-custom-theme',
@@ -178,8 +170,8 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
             title: 'Emoji Style',
             subtitle: 'Choose emoji rendering style',
             model: new Gtk.StringList({
-                strings: ['Native', 'Apple', 'Google', 'Twitter', 'Emojipedia'],
-            }),
+                strings: ['Native', 'Apple', 'Google', 'Twitter', 'Emojipedia']
+            })
         });
         const emojiStyleValues = ['native', 'apple', 'google', 'twitter', 'emojipedia'];
         const currentStyle = settings.get_string('emoji-style');
@@ -194,8 +186,8 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
             title: 'Popup Size',
             subtitle: 'Choose size preset or customize',
             model: new Gtk.StringList({
-                strings: ['Compact', 'Default', 'Comfortable', 'Custom'],
-            }),
+                strings: ['Compact', 'Default', 'Comfortable', 'Custom']
+            })
         });
         const sizeModeValues = ['compact', 'default', 'comfortable', 'custom'];
         const currentSizeMode = settings.get_string('popup-size-mode') || 'default';
@@ -218,11 +210,11 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
                 upper: 1280,
                 step_increment: 10,
                 page_increment: 50,
-                value: settings.get_int('popup-width'),
+                value: settings.get_int('popup-width')
             }),
             numeric: true,
             snap_to_ticks: true,
-            visible: currentSizeMode === 'custom',
+            visible: currentSizeMode === 'custom'
         });
         widthRow.connect('notify::value', () => {
             settings.set_int('popup-width', Math.round(widthRow.get_value()));
@@ -238,11 +230,11 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
                 upper: 720,
                 step_increment: 10,
                 page_increment: 50,
-                value: settings.get_int('popup-height'),
+                value: settings.get_int('popup-height')
             }),
             numeric: true,
             snap_to_ticks: true,
-            visible: currentSizeMode === 'custom',
+            visible: currentSizeMode === 'custom'
         });
         heightRow.connect('notify::value', () => {
             settings.set_int('popup-height', Math.round(heightRow.get_value()));
@@ -253,19 +245,19 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
 
         // Page 3: Features
         const featuresPage = new Adw.PreferencesPage({
-            title: 'Features',
+            title: 'Features'
             
         });
 
         const featuresGroup = new Adw.PreferencesGroup({
             title: 'Feature Settings',
-            description: 'Enable or disable specific features.',
+            description: 'Enable or disable specific features.'
         });
 
         // Skin Tones Disabled
         const skinTonesRow = new Adw.SwitchRow({
             title: 'Skin Tones',
-            subtitle: 'Show skin tone variants for emojis',
+            subtitle: 'Show skin tone variants for emojis'
         });
         const skinTonesActive = !settings.get_boolean('skin-tones-disabled');
         skinTonesRow.set_active(skinTonesActive);
@@ -277,7 +269,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Search
         const searchRow = new Adw.SwitchRow({
             title: 'Search',
-            subtitle: 'Enable emoji search functionality',
+            subtitle: 'Enable emoji search functionality'
         });
         const searchActive = !settings.get_boolean('search-disabled');
         searchRow.set_active(searchActive);
@@ -289,7 +281,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Search Placeholder
         const searchPlaceholderRow = new Adw.EntryRow({
             title: 'Search Placeholder',
-            text: settings.get_string('search-placeholder'),
+            text: settings.get_string('search-placeholder')
         });
         searchPlaceholderRow.connect('notify::text', () => {
             settings.set_string('search-placeholder', searchPlaceholderRow.get_text());
@@ -301,8 +293,8 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
             title: 'Suggestion Mode',
             subtitle: 'How to suggest emojis',
             model: new Gtk.StringList({
-                strings: ['Recent', 'Frequent', 'Trending'],
-            }),
+                strings: ['Recent', 'Frequent', 'Trending']
+            })
         });
         const suggestionValues = ['recent', 'frequent', 'trending'];
         const currentSuggestion = settings.get_string('suggestion-mode');
@@ -317,8 +309,8 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
             title: 'Skin Tone Picker Location',
             subtitle: 'Where to show skin tone selector',
             model: new Gtk.StringList({
-                strings: ['Search Bar', 'Top', 'Bottom'],
-            }),
+                strings: ['Search Bar', 'Top', 'Bottom']
+            })
         });
         const locationValues = ['search', 'top', 'bottom'];
         const currentLocation = settings.get_string('skin-tone-location');
@@ -331,7 +323,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Custom Emojis
         const customEmojisRow = new Adw.SwitchRow({
             title: 'Custom Emojis',
-            subtitle: 'Allow adding custom emoji shortcuts',
+            subtitle: 'Allow adding custom emoji shortcuts'
         });
         settings.bind(
             'custom-emojis-enabled',
@@ -344,7 +336,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Reactions
         const reactionsRow = new Adw.SwitchRow({
             title: 'Reactions',
-            subtitle: 'Show reaction shortcuts',
+            subtitle: 'Show reaction shortcuts'
         });
         settings.bind(
             'reactions-enabled',
@@ -367,15 +359,15 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
         // Create switcher and content area
         const switcher = new Adw.ViewSwitcher({
             stack: stack,
-            policy: Adw.ViewSwitcherPolicy.WIDE,
+            policy: Adw.ViewSwitcherPolicy.WIDE
         });
 
         const switcherBar = new Adw.HeaderBar({
-            title_widget: switcher,
+            title_widget: switcher
         });
 
         const box = new Gtk.Box({
-            orientation: Gtk.Orientation.VERTICAL,
+            orientation: Gtk.Orientation.VERTICAL
         });
         box.append(switcherBar);
         box.append(stack);
@@ -435,7 +427,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
                     'slash': '/',
                     'backslash': '\\',
                     'semicolon': ';',
-                    'apostrophe': "'",
+                    'apostrophe': '\'',
                     'bracketleft': '[',
                     'bracketright': ']',
                     'grave': '`',
@@ -445,7 +437,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
                     'return': 'Enter',
                     'backspace': 'Backspace',
                     'tab': 'Tab',
-                    'escape': 'Esc',
+                    'escape': 'Esc'
                 };
                 
                 const lowerKey = key.toLowerCase();
@@ -481,7 +473,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
             buttons: Gtk.ButtonsType.OK_CANCEL,
             message_type: Gtk.MessageType.QUESTION,
             text: 'Set Emoji Copy Keybind',
-            secondary_text: 'Press your desired key combination...',
+            secondary_text: 'Press your desired key combination...'
         });
 
         const contentArea = dialog.get_content_area();
@@ -491,7 +483,7 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
             margin_bottom: 12,
             margin_start: 12,
             margin_end: 12,
-            editable: false,
+            editable: false
         });
 
         contentArea.append(entry);

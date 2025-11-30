@@ -12,6 +12,7 @@ import GLib from 'gi://GLib';
 export class UsageTracker {
     #settings;
     #usageCount;
+    #timeoutIds = new Set();
 
     /**
      * @param {Gio.Settings} settings
@@ -20,6 +21,24 @@ export class UsageTracker {
         this.#settings = settings;
         this.#usageCount = new Map();
         this.loadUsageData();
+    }
+
+    /**
+     * Add a timeout and track it
+     * @param {number} interval
+     * @param {Function} callback
+     * @returns {number}
+     */
+    #addTimeout(interval, callback) {
+        const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, interval, () => {
+            const result = callback();
+            if (result === GLib.SOURCE_REMOVE) {
+                this.#timeoutIds.delete(id);
+            }
+            return result;
+        });
+        this.#timeoutIds.add(id);
+        return id;
     }
 
     /**
@@ -33,7 +52,7 @@ export class UsageTracker {
                 this.#usageCount = new Map(Object.entries(data));
             }
         } catch (error) {
-            log('emoji-picker: failed to load usage data');
+            console.log('emoji-picker: failed to load usage data' + error);
             this.#usageCount = new Map();
         }
     }
@@ -47,7 +66,7 @@ export class UsageTracker {
             const json = JSON.stringify(obj);
             this.#settings.set_string('emoji-usage-counts', json);
         } catch (error) {
-            log('emoji-picker: failed to save usage data');
+            console.log('emoji-picker: failed to save usage data' + error);
         }
     }
 
@@ -87,7 +106,7 @@ export class UsageTracker {
         this.#usageCount.set(emoji, currentCount + 1);
         
         // Debounce saves
-        GLib.timeout_add(GLib.PRIORITY_LOW, 500, () => {
+        this.#addTimeout(500, () => {
             this.saveUsageData();
             return GLib.SOURCE_REMOVE;
         });
@@ -109,5 +128,19 @@ export class UsageTracker {
     clear() {
         this.#usageCount.clear();
         this.saveUsageData();
+    }
+
+    /**
+     * Destroy manager
+     */
+    destroy() {
+        // Clear all timeouts
+        for (const id of this.#timeoutIds) {
+            if (id) {
+                GLib.source_remove(id);
+            }
+        }
+        this.#timeoutIds.clear();
+        this.#settings = null;
     }
 }

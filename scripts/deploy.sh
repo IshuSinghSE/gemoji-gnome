@@ -9,6 +9,15 @@ echo "📦 Deploying Gemoji — GNOME Emoji Picker..."
 rsync -av --delete \
   --exclude='.git' \
   --exclude='docs/' \
+  --exclude='dist/' \
+  --exclude='node_modules/' \
+  --exclude='package-lock.json' \
+  --exclude='package.json' \
+  --exclude='assets/' \
+  --exclude='scripts/' \
+  --exclude='*.log' \
+  --exclude='*.bak' \
+  --exclude='*.tmp' \
   --exclude='extension_old.js' \
   --exclude='deploy.sh' \
   /home/ashu/Code/linux/emoji-picker/ \
