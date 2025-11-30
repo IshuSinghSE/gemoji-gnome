@@ -67,7 +67,7 @@ function loadEmojiJson(file) {
             description: entry.description ?? '',
             category: entry.category ?? 'Other',
             aliases: entry.aliases ?? [],
-            tags: entry.tags ?? [],
+            tags: entry.tags ?? []
         }));
 }
 
@@ -83,36 +83,36 @@ function getFallbackEmojiData() {
             description: 'grinning face',
             category: 'Smileys & Emotion',
             aliases: ['grinning'],
-            tags: ['smile', 'happy'],
+            tags: ['smile', 'happy']
         },
         {
             emoji: '😂',
             description: 'face with tears of joy',
             category: 'Smileys & Emotion',
             aliases: ['joy'],
-            tags: ['funny', 'haha'],
+            tags: ['funny', 'haha']
         },
         {
             emoji: '❤️',
             description: 'red heart',
             category: 'Symbols',
             aliases: ['heart'],
-            tags: ['love'],
+            tags: ['love']
         },
         {
             emoji: '👍',
             description: 'thumbs up',
             category: 'People & Body',
             aliases: ['+1'],
-            tags: ['approve', 'affirmative'],
+            tags: ['approve', 'affirmative']
         },
         {
             emoji: '🔥',
             description: 'fire',
             category: 'Travel & Places',
             aliases: ['fire'],
-            tags: ['lit'],
-        },
+            tags: ['lit']
+        }
     ];
 }
 

@@ -8,7 +8,6 @@
  */
 
 import GLib from 'gi://GLib';
-import Gio from 'gi://Gio';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';

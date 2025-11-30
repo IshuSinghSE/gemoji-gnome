@@ -114,7 +114,7 @@ export class CategoryManager {
 
         for (const [category, section] of this.#categorySections.entries()) {
             try {
-                const allocation = section.get_allocation_box();
+                const allocation = section.get_allocation();
                 const sectionY = allocation.y1;
                 
                 // Check if this section is at or above the current scroll position
@@ -127,7 +127,7 @@ export class CategoryManager {
                 }
             } catch (e) {
                 // Skip if allocation fails
-                continue;
+                console.log('emoji-picker: failed to get allocation for category section: ' + e);
             }
         }
 
@@ -148,7 +148,7 @@ export class CategoryManager {
         console.log(`emoji-picker: buildCategoryTabs called with ${categories.length} categories: ${JSON.stringify(categories)}`);
         const tabBox = new St.BoxLayout({
             style_class: 'emoji-category-tabs',
-            x_expand: true,
+            x_expand: true
         });
 
         console.log(`emoji-picker: tabBox created, initial children count: ${tabBox.get_n_children()}`);
@@ -166,14 +166,14 @@ export class CategoryManager {
             const icon = new St.Icon({
                 style_class: 'emoji-category-icon',
                 gicon: gicon,
-                icon_size: 18,
+                icon_size: 18
             });
 
             const button = new St.Button({
                 style_class: 'emoji-category-tab',
                 child: icon,
                 can_focus: true,
-                track_hover: true,
+                track_hover: true
             });
 
             button.connect('clicked', () => {

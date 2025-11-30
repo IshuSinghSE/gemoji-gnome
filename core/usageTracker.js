@@ -52,7 +52,7 @@ export class UsageTracker {
                 this.#usageCount = new Map(Object.entries(data));
             }
         } catch (error) {
-            console.log('emoji-picker: failed to load usage data');
+            console.log('emoji-picker: failed to load usage data' + error);
             this.#usageCount = new Map();
         }
     }
@@ -66,7 +66,7 @@ export class UsageTracker {
             const json = JSON.stringify(obj);
             this.#settings.set_string('emoji-usage-counts', json);
         } catch (error) {
-            console.log('emoji-picker: failed to save usage data');
+            console.log('emoji-picker: failed to save usage data' + error);
         }
     }
 

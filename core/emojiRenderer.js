@@ -62,7 +62,7 @@ export class EmojiRenderer {
                 currentRow = new St.BoxLayout({
                     vertical: false,
                     style_class: 'emoji-row',
-                    x_expand: true,
+                    x_expand: true
                 });
                 this.#emojiGrid.add_child(currentRow);
             }
@@ -72,7 +72,7 @@ export class EmojiRenderer {
                 label: item.emoji,
                 can_focus: true,
                 x_expand: false,
-                y_expand: false,
+                y_expand: false
             });
 
             button.set_accessible_name(item.description ?? item.emoji);
@@ -132,7 +132,7 @@ export class EmojiRenderer {
             const header = new St.Label({
                 text: category,
                 style_class: 'emoji-category-header',
-                x_expand: true,
+                x_expand: true
             });
             this.#emojiGrid.add_child(header);
 
@@ -150,7 +150,7 @@ export class EmojiRenderer {
                     currentRow = new St.BoxLayout({
                         vertical: false,
                         style_class: 'emoji-row',
-                        x_expand: true,
+                        x_expand: true
                     });
                     this.#emojiGrid.add_child(currentRow);
                 }
@@ -160,7 +160,7 @@ export class EmojiRenderer {
                     label: item.emoji,
                     can_focus: true,
                     x_expand: false,
-                    y_expand: false,
+                    y_expand: false
                 });
 
                 button.set_accessible_name(item.description ?? item.emoji);

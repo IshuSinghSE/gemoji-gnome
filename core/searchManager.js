@@ -95,8 +95,9 @@ export class SearchManager {
                         return value;
                     }
                 }
-            } catch (error) {
+            } catch {
                 // Ignore and fall back to other properties
+                console.log('emoji-picker: failed to read text from actor');
             }
 
             if (actor.text !== undefined) {
@@ -114,8 +115,8 @@ export class SearchManager {
                 if (typeof value === 'string') {
                     raw = value;
                 }
-            } catch (error) {
-                // Ignore and fall back to other accessors
+            } catch {
+                console.log('emoji-picker: failed to read text from searchEntry');
             }
         }
 
@@ -148,7 +149,7 @@ export class SearchManager {
                 item.emoji,
                 item.description,
                 ...(item.aliases || []),
-                ...(item.tags || []),
+                ...(item.tags || [])
             ]
                 .filter(Boolean)
                 .join(' ')
