@@ -28,7 +28,7 @@ rm -f "$ZIP_NAME"
 
 # Create the zip
 zip -r "$ZIP_NAME" ${INCLUDE_FILES[@]} \
-    -x "*.git*" "node_modules/*" "*.md" "*.sh" "*.json" "package*" "eslint*" "dist/*" "docs/*" "assets/*" "scripts/*" "tests/*" "*.zip"
+    -x "*.git*" "node_modules/*" "*.md" "*.sh" "package*" "eslint*" "dist/*" "docs/*" "assets/*" "scripts/*" "tests/*" "*.zip"
 
 # Show result
 ls -lh "$ZIP_NAME"
