@@ -1,0 +1,27 @@
+# Node and package manager
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build and dist
+/dist/
+*.zip
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lint/config/dev
+*.log
+
+# Compiled schemas
+schemas/gschemas.compiled
+
+# Misc
+*.bak
+*.tmp
