@@ -30,7 +30,7 @@ export class UsageTracker {
      * @returns {number}
      */
     #addTimeout(interval, callback) {
-        const id = GLib.timeout_add(GLib.PRIORITY_LOW, interval, () => {
+        const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, interval, () => {
             const result = callback();
             if (result === GLib.SOURCE_REMOVE) {
                 this.#timeoutIds.delete(id);
