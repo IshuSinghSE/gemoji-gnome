@@ -18,11 +18,11 @@ export function loadEmojiData(directory) {
         try {
             return loadEmojiJson(file);
         } catch (error) {
-            logError(error, 'emoji-picker: failed to parse emoji.json');
+            console.error('emoji-picker: failed to parse emoji.json', error);
         }
     }
 
-    log('emoji-picker: using built-in fallback emoji list');
+    console.log('emoji-picker: using built-in fallback emoji list');
     return getFallbackEmojiData();
 }
 
