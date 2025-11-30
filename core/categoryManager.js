@@ -108,31 +108,29 @@ export class CategoryManager {
 
         const scrollY = this.#scrollAdjustment.get_value();
 
-        // Find which category section is currently visible at the top
-        let activeCategory = null;
-        let minDistance = Infinity;
+        let bestCategory = null;
+        let bestY = -Infinity;
 
         for (const [category, section] of this.#categorySections.entries()) {
             try {
                 const allocation = section.get_allocation();
                 const sectionY = allocation.y1;
-                
-                // Check if this section is at or above the current scroll position
-                if (sectionY <= scrollY + CATEGORY_SCROLL_THRESHOLD) {
-                    const distance = scrollY - sectionY;
-                    if (distance >= 0 && distance < minDistance) {
-                        minDistance = distance;
-                        activeCategory = category;
-                    }
+                if (sectionY <= scrollY && sectionY > bestY) {
+                    bestY = sectionY;
+                    bestCategory = category;
                 }
             } catch (e) {
-                // Skip if allocation fails
                 console.log('emoji-picker: failed to get allocation for category section: ' + e);
             }
         }
 
-        if (activeCategory && activeCategory !== this.#currentCategory) {
-            this.#currentCategory = activeCategory;
+        // Fallback: if none matched, pick the first section
+        if (!bestCategory && this.#categorySections.size > 0) {
+            bestCategory = this.#categorySections.keys().next().value;
+        }
+
+        if (bestCategory && bestCategory !== this.#currentCategory) {
+            this.#currentCategory = bestCategory;
             this.updateCategoryStates();
         }
     }

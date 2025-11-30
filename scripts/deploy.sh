@@ -15,6 +15,9 @@ rsync -av --delete \
   --exclude='package.json' \
   --exclude='assets/' \
   --exclude='scripts/' \
+  --exclude='*.md' \
+  --exclude='eslint.config.js' \
+  --exclude='.gitignore' \
   --exclude='*.log' \
   --exclude='*.bak' \
   --exclude='*.tmp' \
