@@ -42,19 +42,15 @@ export class KeybindingManager {
             return;
         }
 
-        try {
-            Main.wm.addKeybinding(
-                this.#keybindingName,
-                this.#settings,
-                Meta.KeyBindingFlags.NONE,
-                Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
-                this.#callback
-            );
-            this.#registered = true;
-            log(`emoji-picker: keybinding registered: ${this.#keybindingName}`);
-        } catch (error) {
-            logError(error, `emoji-picker: failed to register keybinding: ${this.#keybindingName}`);
-        }
+        Main.wm.addKeybinding(
+            this.#keybindingName,
+            this.#settings,
+            Meta.KeyBindingFlags.NONE,
+            Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
+            this.#callback
+        );
+        this.#registered = true;
+        console.log(`emoji-picker: keybinding registered: ${this.#keybindingName}`);
     }
 
     /**
@@ -65,13 +61,9 @@ export class KeybindingManager {
             return;
         }
 
-        try {
-            Main.wm.removeKeybinding(this.#keybindingName);
-            this.#registered = false;
-            log(`emoji-picker: keybinding unregistered: ${this.#keybindingName}`);
-        } catch (error) {
-            logError(error, `emoji-picker: failed to unregister keybinding: ${this.#keybindingName}`);
-        }
+        Main.wm.removeKeybinding(this.#keybindingName);
+        this.#registered = false;
+        console.log(`emoji-picker: keybinding unregistered: ${this.#keybindingName}`);
     }
 
     /**

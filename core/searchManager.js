@@ -80,54 +80,7 @@ export class SearchManager {
      * @returns {string}
      */
     getQuery() {
-        if (!this.#searchEntry) {
-            return '';
-        }
-
-        const readText = actor => {
-            if (!actor) {
-                return '';
-            }
-            try {
-                if (typeof actor.get_text === 'function') {
-                    const value = actor.get_text();
-                    if (typeof value === 'string') {
-                        return value;
-                    }
-                }
-            } catch (error) {
-                // Ignore and fall back to other properties
-            }
-
-            if (actor.text !== undefined) {
-                return String(actor.text);
-            }
-
-            return '';
-        };
-
-        let raw = '';
-
-        if (typeof this.#searchEntry.get_text === 'function') {
-            try {
-                const value = this.#searchEntry.get_text();
-                if (typeof value === 'string') {
-                    raw = value;
-                }
-            } catch (error) {
-                // Ignore and fall back to other accessors
-            }
-        }
-
-        if (!raw) {
-            raw = readText(this.#searchEntry.get_clutter_text?.());
-        }
-
-        if (!raw && this.#searchEntry.text !== undefined) {
-            raw = String(this.#searchEntry.text);
-        }
-
-        return raw.trim().toLowerCase();
+        return this.#searchEntry?.text?.trim().toLowerCase() ?? '';
     }
 
     /**

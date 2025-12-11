@@ -44,10 +44,6 @@ export default class EmojiPickerPrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
 
-        // Create main preferences window
-        const header_bar = new Adw.HeaderBar();
-        window.set_titlebar(header_bar);
-
         // Create view stack for multiple pages
         const stack = new Adw.ViewStack();
         const stack_switcher = new Adw.ViewStackPage({
