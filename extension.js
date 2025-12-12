@@ -218,12 +218,8 @@ export default class EmojiPickerExtension extends Extension {
 
         // Direct click handler fallback in case menu events are not firing
         this.#button.connect('button-press-event', () => {
-            try {
-                console.log('emoji-picker: panel button clicked (button-press-event)');
-                this.#togglePopup();
-            } catch (e) {
-                console.log(`emoji-picker: error in panel click handler: ${e}`);
-            }
+            console.log('emoji-picker: panel button clicked (button-press-event)');
+            this.#togglePopup();
             return Clutter.EVENT_STOP;
         });
 
@@ -427,20 +423,14 @@ export default class EmojiPickerExtension extends Extension {
         const endDrag = () => {
             dragging = false;
             if (stageMotionId && global.stage) {
-                try { global.stage.disconnect(stageMotionId); } catch (e) {
-                    console.log('emoji-picker: failed to disconnect stage motion event: ' + e);
-                }
+                global.stage.disconnect(stageMotionId);
                 stageMotionId = 0;
             }
             if (stageReleaseId && global.stage) {
-                try { global.stage.disconnect(stageReleaseId); } catch (e) {
-                    console.log('emoji-picker: failed to disconnect stage release event: ' + e);
-                }
+                global.stage.disconnect(stageReleaseId);
                 stageReleaseId = 0;
             }
-            try { dragHandle.remove_style_class_name('dragging'); } catch (e) {
-                console.log('emoji-picker: failed to remove dragging style class: ' + e);
-            }
+            dragHandle.remove_style_class_name('dragging');
         };
 
         dragHandle.connect('button-press-event', (_actor, event) => {
@@ -707,9 +697,7 @@ export default class EmojiPickerExtension extends Extension {
         }
 
         this.#stageClickId = global.stage.connect('button-press-event', (_actor, event) => {
-            const actor = typeof event.get_actor === 'function'
-                ? event.get_actor()
-                : event.get_source?.();
+            const actor = event.get_source();
 
             if (actor && this.#popup && (actor === this.#popup || this.#popup.contains(actor))) {
                 return Clutter.EVENT_PROPAGATE;
