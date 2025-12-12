@@ -84,51 +84,8 @@ export class SearchManager {
             return '';
         }
 
-        const readText = actor => {
-            if (!actor) {
-                return '';
-            }
-            try {
-                if (typeof actor.get_text === 'function') {
-                    const value = actor.get_text();
-                    if (typeof value === 'string') {
-                        return value;
-                    }
-                }
-            } catch {
-                // Ignore and fall back to other properties
-                console.log('emoji-picker: failed to read text from actor');
-            }
-
-            if (actor.text !== undefined) {
-                return String(actor.text);
-            }
-
-            return '';
-        };
-
-        let raw = '';
-
-        if (typeof this.#searchEntry.get_text === 'function') {
-            try {
-                const value = this.#searchEntry.get_text();
-                if (typeof value === 'string') {
-                    raw = value;
-                }
-            } catch {
-                console.log('emoji-picker: failed to read text from searchEntry');
-            }
-        }
-
-        if (!raw) {
-            raw = readText(this.#searchEntry.get_clutter_text?.());
-        }
-
-        if (!raw && this.#searchEntry.text !== undefined) {
-            raw = String(this.#searchEntry.text);
-        }
-
-        return raw.trim().toLowerCase();
+        const text = this.#searchEntry.get_text?.() ?? this.#searchEntry.text ?? '';
+        return String(text).trim().toLowerCase();
     }
 
     /**

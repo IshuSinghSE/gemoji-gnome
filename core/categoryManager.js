@@ -70,7 +70,7 @@ export class CategoryManager {
                 this.#scrollAdjustment = this.#scrollView.vadjustment;
                 this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
                 console.log('emoji-picker: Connected to vadjustment');
-            } else if (this.#scrollView && typeof this.#scrollView.get_vscroll_bar === 'function') {
+            } else if (this.#scrollView && this.#scrollView.get_vscroll_bar) {
                 const vScroll = this.#scrollView.get_vscroll_bar();
                 if (vScroll) {
                     this.#scrollAdjustment = vScroll.get_adjustment();
@@ -79,7 +79,7 @@ export class CategoryManager {
                         console.log('emoji-picker: Connected to scroll adjustment via vScroll');
                     }
                 }
-            } else if (this.#scrollView && typeof this.#scrollView.connect === 'function') {
+            } else if (this.#scrollView) {
                 // Final fallback: connect to scroll-event
                 this.#scrollView.connect('scroll-event', () => {
                     this.#addTimeout(50, () => {
@@ -112,15 +112,11 @@ export class CategoryManager {
         let bestY = -Infinity;
 
         for (const [category, section] of this.#categorySections.entries()) {
-            try {
-                const allocation = section.get_allocation();
-                const sectionY = allocation.y1;
-                if (sectionY <= scrollY && sectionY > bestY) {
-                    bestY = sectionY;
-                    bestCategory = category;
-                }
-            } catch (e) {
-                console.log('emoji-picker: failed to get allocation for category section: ' + e);
+            const allocation = section.get_allocation_box();
+            const sectionY = allocation.y1;
+            if (sectionY <= scrollY && sectionY > bestY) {
+                bestY = sectionY;
+                bestCategory = category;
             }
         }
 
@@ -217,34 +213,29 @@ export class CategoryManager {
         this.#addTimeout(CATEGORY_SCROLL_DELAY, () => {
             const section = this.#categorySections.get(category);
             if (section) {
-                try {
-                    // Ensure we have the adjustment
-                    if (!this.#scrollAdjustment && this.#scrollView) {
-                        if (this.#scrollView.vadjustment) {
-                            this.#scrollAdjustment = this.#scrollView.vadjustment;
-                        }
+                // Ensure we have the adjustment
+                if (!this.#scrollAdjustment && this.#scrollView) {
+                    if (this.#scrollView.vadjustment) {
+                        this.#scrollAdjustment = this.#scrollView.vadjustment;
                     }
+                }
 
-                    if (this.#scrollAdjustment) {
-                        // Mark programmatic scroll so #onScroll ignores it
-                        this.#programmaticScroll = true;
+                if (this.#scrollAdjustment) {
+                    // Mark programmatic scroll so #onScroll ignores it
+                    this.#programmaticScroll = true;
 
-                        // Get the position of the category header
-                        const allocation = section.get_allocation_box();
-                        const sectionY = allocation.y1;
+                    // Get the position of the category header
+                    const allocation = section.get_allocation_box();
+                    const sectionY = allocation.y1;
 
-                        // Scroll to that position
-                        this.#scrollAdjustment.set_value(Math.max(0, sectionY - 10));
+                    // Scroll to that position
+                    this.#scrollAdjustment.set_value(Math.max(0, sectionY - 10));
 
-                        // Clear the flag shortly after to resume normal scroll handling
-                        this.#addTimeout(150, () => {
-                            this.#programmaticScroll = false;
-                            return GLib.SOURCE_REMOVE;
-                        });
-                    }
-                } catch (e) {
-                    console.log(`emoji-picker: error scrolling to category: ${e}`);
-                    this.#programmaticScroll = false;
+                    // Clear the flag shortly after to resume normal scroll handling
+                    this.#addTimeout(150, () => {
+                        this.#programmaticScroll = false;
+                        return GLib.SOURCE_REMOVE;
+                    });
                 }
             }
             return GLib.SOURCE_REMOVE;
