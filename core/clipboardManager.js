@@ -85,35 +85,39 @@ export class ClipboardManager {
      * @returns {boolean} Success
      */
     #tryVirtualKeyboardPaste() {
+        // We use try-catch here because creating virtual device might fail on some backends
+        // or permissions might be restricted
         try {
             const seat = Clutter.get_default_backend().get_default_seat();
-            const virtualDevice = seat?.create_virtual_device?.(Clutter.InputDeviceType.KEYBOARD_DEVICE);
-            
-            if (virtualDevice) {
-                const ctrlKeyval = 65507; // Control_L
-                const vKeyval = 118; // v key
+            if (seat && seat.create_virtual_device) {
+                const virtualDevice = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
 
-                virtualDevice.notify_keyval(
-                    Clutter.get_current_event_time(),
-                    ctrlKeyval,
-                    Clutter.KeyState.PRESSED
-                );
-                virtualDevice.notify_keyval(
-                    Clutter.get_current_event_time(),
-                    vKeyval,
-                    Clutter.KeyState.PRESSED
-                );
-                virtualDevice.notify_keyval(
-                    Clutter.get_current_event_time(),
-                    vKeyval,
-                    Clutter.KeyState.RELEASED
-                );
-                virtualDevice.notify_keyval(
-                    Clutter.get_current_event_time(),
-                    ctrlKeyval,
-                    Clutter.KeyState.RELEASED
-                );
-                return true;
+                if (virtualDevice) {
+                    const ctrlKeyval = 65507; // Control_L
+                    const vKeyval = 118; // v key
+
+                    virtualDevice.notify_keyval(
+                        Clutter.get_current_event_time(),
+                        ctrlKeyval,
+                        Clutter.KeyState.PRESSED
+                    );
+                    virtualDevice.notify_keyval(
+                        Clutter.get_current_event_time(),
+                        vKeyval,
+                        Clutter.KeyState.PRESSED
+                    );
+                    virtualDevice.notify_keyval(
+                        Clutter.get_current_event_time(),
+                        vKeyval,
+                        Clutter.KeyState.RELEASED
+                    );
+                    virtualDevice.notify_keyval(
+                        Clutter.get_current_event_time(),
+                        ctrlKeyval,
+                        Clutter.KeyState.RELEASED
+                    );
+                    return true;
+                }
             }
         } catch (e) {
             console.log(`emoji-picker: virtual keyboard paste failed: ${e}`);
@@ -125,17 +129,17 @@ export class ClipboardManager {
      * Try pasting using Meta
      */
     #tryMetaPaste() {
-        try {
-            const display = global.display;
-            const focus = display.get_focus_window();
-            
-            if (focus) {
-                Meta.keybindings_set_custom_handler('paste-from-clipboard', () => {
+        // Standard API call, removing try-catch unless specific error expected
+        const display = global.display;
+        const focus = display.get_focus_window();
+
+        if (focus) {
+            // This API might not be available or might change, but for now we assume it exists if Meta is imported
+            if (Meta.keybindings_set_custom_handler) {
+                 Meta.keybindings_set_custom_handler('paste-from-clipboard', () => {
                     return true;
                 });
             }
-        } catch (e) {
-            console.log(`emoji-picker: Meta paste failed: ${e}`);
         }
     }
 

@@ -45,15 +45,17 @@ export class UsageTracker {
      * Load usage data from settings
      */
     loadUsageData() {
-        try {
-            const json = this.#settings.get_string('emoji-usage-counts');
-            if (json) {
+        const json = this.#settings.get_string('emoji-usage-counts');
+        if (json) {
+            try {
                 const data = JSON.parse(json);
                 this.#usageCount = new Map(Object.entries(data));
+            } catch (error) {
+                console.log('emoji-picker: failed to load usage data' + error);
+                this.#usageCount = new Map();
             }
-        } catch (error) {
-            console.log('emoji-picker: failed to load usage data' + error);
-            this.#usageCount = new Map();
+        } else {
+             this.#usageCount = new Map();
         }
     }
 
@@ -61,13 +63,11 @@ export class UsageTracker {
      * Save usage data to settings
      */
     saveUsageData() {
-        try {
-            const obj = Object.fromEntries(this.#usageCount);
-            const json = JSON.stringify(obj);
-            this.#settings.set_string('emoji-usage-counts', json);
-        } catch (error) {
-            console.log('emoji-picker: failed to save usage data' + error);
-        }
+        // No try-catch needed here as JSON.stringify on simple object shouldn't fail
+        // and set_string shouldn't typically throw unless connection is broken
+        const obj = Object.fromEntries(this.#usageCount);
+        const json = JSON.stringify(obj);
+        this.#settings.set_string('emoji-usage-counts', json);
     }
 
     /**
