@@ -70,25 +70,30 @@ export class CategoryManager {
                 this.#scrollAdjustment = this.#scrollView.vadjustment;
                 this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
                 console.log('emoji-picker: Connected to vadjustment');
-            } else if (this.#scrollView && typeof this.#scrollView.get_vscroll_bar === 'function') {
-                const vScroll = this.#scrollView.get_vscroll_bar();
+            } else {
+                // Fallback: use get_vscroll_bar if available, otherwise just use scroll-event
+                const vScroll = this.#scrollView.get_vscroll_bar?.();
                 if (vScroll) {
                     this.#scrollAdjustment = vScroll.get_adjustment();
                     if (this.#scrollAdjustment) {
                         this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
                         console.log('emoji-picker: Connected to scroll adjustment via vScroll');
+                        return;
                     }
                 }
-            } else if (this.#scrollView && typeof this.#scrollView.connect === 'function') {
+
                 // Final fallback: connect to scroll-event
-                this.#scrollView.connect('scroll-event', () => {
-                    this.#addTimeout(50, () => {
-                        this.#onScroll();
-                        return GLib.SOURCE_REMOVE;
+                // This seems safe to do if the object supports it, which St.ScrollView does
+                if (this.#scrollView.connect) {
+                    this.#scrollView.connect('scroll-event', () => {
+                        this.#addTimeout(50, () => {
+                            this.#onScroll();
+                            return GLib.SOURCE_REMOVE;
+                        });
+                        return false;
                     });
-                    return false;
-                });
-                console.log('emoji-picker: Connected to scroll-event fallback');
+                    console.log('emoji-picker: Connected to scroll-event fallback');
+                }
             }
         });
     }
@@ -113,21 +118,21 @@ export class CategoryManager {
         let minDistance = Infinity;
 
         for (const [category, section] of this.#categorySections.entries()) {
-            try {
-                const allocation = section.get_allocation();
-                const sectionY = allocation.y1;
-                
-                // Check if this section is at or above the current scroll position
-                if (sectionY <= scrollY + CATEGORY_SCROLL_THRESHOLD) {
-                    const distance = scrollY - sectionY;
-                    if (distance >= 0 && distance < minDistance) {
-                        minDistance = distance;
-                        activeCategory = category;
-                    }
+            // Check if get_allocation is available and returns valid data
+            if (!section.get_allocation) continue;
+
+            const allocation = section.get_allocation();
+            if (!allocation) continue;
+
+            const sectionY = allocation.y1;
+
+            // Check if this section is at or above the current scroll position
+            if (sectionY <= scrollY + CATEGORY_SCROLL_THRESHOLD) {
+                const distance = scrollY - sectionY;
+                if (distance >= 0 && distance < minDistance) {
+                    minDistance = distance;
+                    activeCategory = category;
                 }
-            } catch (e) {
-                // Skip if allocation fails
-                console.log('emoji-picker: failed to get allocation for category section: ' + e);
             }
         }
 
@@ -219,19 +224,20 @@ export class CategoryManager {
         this.#addTimeout(CATEGORY_SCROLL_DELAY, () => {
             const section = this.#categorySections.get(category);
             if (section) {
-                try {
-                    // Ensure we have the adjustment
-                    if (!this.#scrollAdjustment && this.#scrollView) {
-                        if (this.#scrollView.vadjustment) {
-                            this.#scrollAdjustment = this.#scrollView.vadjustment;
-                        }
+                // Ensure we have the adjustment
+                if (!this.#scrollAdjustment && this.#scrollView) {
+                    if (this.#scrollView.vadjustment) {
+                        this.#scrollAdjustment = this.#scrollView.vadjustment;
                     }
+                }
 
-                    if (this.#scrollAdjustment) {
-                        // Mark programmatic scroll so #onScroll ignores it
-                        this.#programmaticScroll = true;
+                if (this.#scrollAdjustment) {
+                    // Mark programmatic scroll so #onScroll ignores it
+                    this.#programmaticScroll = true;
 
-                        // Get the position of the category header
+                    // Get the position of the category header
+                    // We assume get_allocation_box is available on St.Widget
+                    if (section.get_allocation_box) {
                         const allocation = section.get_allocation_box();
                         const sectionY = allocation.y1;
 
@@ -244,9 +250,6 @@ export class CategoryManager {
                             return GLib.SOURCE_REMOVE;
                         });
                     }
-                } catch (e) {
-                    console.log(`emoji-picker: error scrolling to category: ${e}`);
-                    this.#programmaticScroll = false;
                 }
             }
             return GLib.SOURCE_REMOVE;
