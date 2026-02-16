@@ -22,7 +22,7 @@ export function loadEmojiData(directory) {
         }
     }
 
-    log('emoji-picker: using built-in fallback emoji list');
+    console.warn('emoji-picker: using built-in fallback emoji list');
     return getFallbackEmojiData();
 }
 

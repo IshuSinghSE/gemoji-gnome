@@ -121,7 +121,7 @@ export class ClipboardManager {
                 return true;
             }
         } catch (e) {
-            log(`emoji-picker: virtual keyboard paste failed: ${e}`);
+            console.warn(`emoji-picker: virtual keyboard paste failed: ${e}`);
         }
         return false;
     }
@@ -140,7 +140,7 @@ export class ClipboardManager {
                 });
             }
         } catch (e) {
-            log(`emoji-picker: Meta paste failed: ${e}`);
+            console.warn(`emoji-picker: Meta paste failed: ${e}`);
         }
     }
 

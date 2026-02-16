@@ -51,7 +51,7 @@ export class KeybindingManager {
                 this.#callback
             );
             this.#registered = true;
-            log(`emoji-picker: keybinding registered: ${this.#keybindingName}`);
+            console.warn(`emoji-picker: keybinding registered: ${this.#keybindingName}`);
         } catch (error) {
             logError(error, `emoji-picker: failed to register keybinding: ${this.#keybindingName}`);
         }
@@ -68,7 +68,7 @@ export class KeybindingManager {
         try {
             Main.wm.removeKeybinding(this.#keybindingName);
             this.#registered = false;
-            log(`emoji-picker: keybinding unregistered: ${this.#keybindingName}`);
+            console.warn(`emoji-picker: keybinding unregistered: ${this.#keybindingName}`);
         } catch (error) {
             logError(error, `emoji-picker: failed to unregister keybinding: ${this.#keybindingName}`);
         }
