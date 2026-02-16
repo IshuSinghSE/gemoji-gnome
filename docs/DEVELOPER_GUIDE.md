@@ -225,7 +225,7 @@ export class MyModule {
 
 ```javascript
 // Add to any module
-log(`emoji-picker: [ModuleName] Debug message: ${value}`);
+console.warn(`emoji-picker: [ModuleName] Debug message: ${value}`);
 ```
 
 ### Check Logs

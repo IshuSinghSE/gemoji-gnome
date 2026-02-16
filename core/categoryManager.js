@@ -50,14 +50,14 @@ export class CategoryManager {
             if (this.#scrollView.vadjustment) {
                 this.#scrollAdjustment = this.#scrollView.vadjustment;
                 this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
-                log('emoji-picker: Connected to vadjustment');
+                console.warn('emoji-picker: Connected to vadjustment');
             } else if (this.#scrollView && typeof this.#scrollView.get_vscroll_bar === 'function') {
                 const vScroll = this.#scrollView.get_vscroll_bar();
                 if (vScroll) {
                     this.#scrollAdjustment = vScroll.get_adjustment();
                     if (this.#scrollAdjustment) {
                         this.#scrollAdjustment.connect('notify::value', () => this.#onScroll());
-                        log('emoji-picker: Connected to scroll adjustment via vScroll');
+                        console.warn('emoji-picker: Connected to scroll adjustment via vScroll');
                     }
                 }
             } else if (this.#scrollView && typeof this.#scrollView.connect === 'function') {
@@ -69,7 +69,7 @@ export class CategoryManager {
                     });
                     return false;
                 });
-                log('emoji-picker: Connected to scroll-event fallback');
+                console.warn('emoji-picker: Connected to scroll-event fallback');
             }
         });
     }
@@ -126,21 +126,21 @@ export class CategoryManager {
      * @returns {St.BoxLayout}
      */
     buildCategoryTabs(categories, extensionDir) {
-        log(`emoji-picker: buildCategoryTabs called with ${categories.length} categories: ${JSON.stringify(categories)}`);
+        console.warn(`emoji-picker: buildCategoryTabs called with ${categories.length} categories: ${JSON.stringify(categories)}`);
         const tabBox = new St.BoxLayout({
             style_class: 'emoji-category-tabs',
             x_expand: true,
         });
 
-        log(`emoji-picker: tabBox created, initial children count: ${tabBox.get_n_children()}`);
+        console.warn(`emoji-picker: tabBox created, initial children count: ${tabBox.get_n_children()}`);
 
         for (const category of categories) {
-            log(`emoji-picker: Creating tab for category: ${category}`);
+            console.warn(`emoji-picker: Creating tab for category: ${category}`);
             const iconName = this.#getCategoryIconName(category);
-            log(`emoji-picker: Icon name: ${iconName}`);
+            console.warn(`emoji-picker: Icon name: ${iconName}`);
             const iconFile = extensionDir.get_child('icons').get_child(`${iconName}.svg`);
             const iconPath = iconFile.get_path();
-            log(`emoji-picker: Icon path: ${iconPath}`);
+            console.warn(`emoji-picker: Icon path: ${iconPath}`);
 
             // Load icon directly from file to avoid theme cache issues
             const gicon = Gio.FileIcon.new(iconFile);
@@ -158,17 +158,17 @@ export class CategoryManager {
             });
 
             button.connect('clicked', () => {
-                log(`emoji-picker: Button clicked for category: "${category}"`);
+                console.warn(`emoji-picker: Button clicked for category: "${category}"`);
                 this.setCategory(category);
             });
 
             this.#categoryButtons.set(category, button);
             tabBox.add_child(button);
-            log(`emoji-picker: Added button for "${category}", tabBox now has ${tabBox.get_n_children()} children`);
+            console.warn(`emoji-picker: Added button for "${category}", tabBox now has ${tabBox.get_n_children()} children`);
         }
 
         this.updateCategoryStates();
-        log(`emoji-picker: Final tabBox children count: ${tabBox.get_n_children()}`);
+        console.warn(`emoji-picker: Final tabBox children count: ${tabBox.get_n_children()}`);
         return tabBox;
     }
 
@@ -188,10 +188,10 @@ export class CategoryManager {
      * @param {string} category
      */
     setCategory(category) {
-        log(`emoji-picker: setCategory called with: "${category}"`);
-        log(`emoji-picker: Previous currentCategory: "${this.#currentCategory}"`);
+        console.warn(`emoji-picker: setCategory called with: "${category}"`);
+        console.warn(`emoji-picker: Previous currentCategory: "${this.#currentCategory}"`);
         this.#currentCategory = category;
-        log(`emoji-picker: New currentCategory: "${this.#currentCategory}"`);
+        console.warn(`emoji-picker: New currentCategory: "${this.#currentCategory}"`);
         this.updateCategoryStates();
         
         // Scroll to the category section after a small delay to ensure layout is ready
@@ -226,7 +226,7 @@ export class CategoryManager {
                         });
                     }
                 } catch (e) {
-                    log(`emoji-picker: error scrolling to category: ${e}`);
+                    console.warn(`emoji-picker: error scrolling to category: ${e}`);
                     this.#programmaticScroll = false;
                 }
             }
@@ -243,11 +243,11 @@ export class CategoryManager {
      * Update category button states (visual highlighting)
      */
     updateCategoryStates() {
-        log(`emoji-picker: updateCategoryStates - highlighting category: "${this.#currentCategory}"`);
-        log(`emoji-picker: Available category buttons: ${Array.from(this.#categoryButtons.keys()).join(', ')}`);
+        console.warn(`emoji-picker: updateCategoryStates - highlighting category: "${this.#currentCategory}"`);
+        console.warn(`emoji-picker: Available category buttons: ${Array.from(this.#categoryButtons.keys()).join(', ')}`);
         for (const [category, button] of this.#categoryButtons) {
             if (category === this.#currentCategory) {
-                log(`emoji-picker: Adding 'active' class to: "${category}"`);
+                console.warn(`emoji-picker: Adding 'active' class to: "${category}"`);
                 button.add_style_class_name('active');
             } else {
                 button.remove_style_class_name('active');

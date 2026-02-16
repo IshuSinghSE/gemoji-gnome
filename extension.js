@@ -8,7 +8,6 @@
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -205,10 +204,10 @@ export default class EmojiPickerExtension extends Extension {
         // Direct click handler fallback in case menu events are not firing
         this.#button.connect('button-press-event', (_actor, event) => {
             try {
-                log('emoji-picker: panel button clicked (button-press-event)');
+                console.warn('emoji-picker: panel button clicked (button-press-event)');
                 this.#togglePopup();
             } catch (e) {
-                log(`emoji-picker: error in panel click handler: ${e}`);
+                console.warn(`emoji-picker: error in panel click handler: ${e}`);
             }
             return Clutter.EVENT_STOP;
         });
@@ -217,7 +216,7 @@ export default class EmojiPickerExtension extends Extension {
         if (this.#button.menu) {
             this.#button.menu.connect('open-state-changed', (menu, open) => {
                 if (open) {
-                    log('emoji-picker: Menu opened, showing popup');
+                    console.warn('emoji-picker: Menu opened, showing popup');
                     menu.close(false);  // Close the menu immediately
                     this.#togglePopup();
                 }
@@ -241,13 +240,13 @@ export default class EmojiPickerExtension extends Extension {
      * Build popup UI
      */
     #buildPopup() {
-        log('emoji-picker: Starting #buildPopup');
+        console.warn('emoji-picker: Starting #buildPopup');
         if (this.#popup) {
-            log('emoji-picker: Popup already exists');
+            console.warn('emoji-picker: Popup already exists');
             return;
         }
 
-        log('emoji-picker: Creating popup container');
+        console.warn('emoji-picker: Creating popup container');
         // Get dimensions based on size mode
         const dimensions = this.#getPopupDimensions();
         
@@ -280,16 +279,15 @@ export default class EmojiPickerExtension extends Extension {
         const rightSpacer = new St.Widget({ x_expand: true });
 
         // (Close button removed)
-
-    headerBox.add_child(leftSpacer);
-    headerBox.add_child(dragHandle);
-    headerBox.add_child(rightSpacer);
+        headerBox.add_child(leftSpacer);
+        headerBox.add_child(dragHandle);
+        headerBox.add_child(rightSpacer);
 
         container.add_child(headerBox);
 
         // Get categories
         const categories = collectCategories(this.#emojiData);
-        log(`emoji-picker: Categories for tabs: ${JSON.stringify(categories)}`);
+        console.warn(`emoji-picker: Categories for tabs: ${JSON.stringify(categories)}`);
 
         // Create scroll view for emoji grid
         this.#scrollView = new St.ScrollView({
@@ -343,11 +341,10 @@ export default class EmojiPickerExtension extends Extension {
             },
             popupDims.emojisPerRow
         );
-
-    // Build layout: search bar first, then category tabs, then the scrollable grid
-    container.add_child(this.#searchEntry);
-    container.add_child(categoryTabs);
-    container.add_child(this.#scrollView);
+        // Build layout: search bar first, then category tabs, then the scrollable grid
+        container.add_child(this.#searchEntry);
+        container.add_child(categoryTabs);
+        container.add_child(this.#scrollView);
 
         // Create popup
         this.#popup = new St.Widget({
@@ -521,7 +518,7 @@ export default class EmojiPickerExtension extends Extension {
      * @param {{width: number, height: number}} dimensions
      */
     #onPopupSizeChange(dimensions) {
-        log(`emoji-picker: Popup size changed to ${dimensions.width}x${dimensions.height}, emojis per row: ${dimensions.emojisPerRow}`);
+        console.warn(`emoji-picker: Popup size changed to ${dimensions.width}x${dimensions.height}, emojis per row: ${dimensions.emojisPerRow}`);
         if (this.#popup) {
             this.#destroyPopup();
             this.#buildPopup();
@@ -583,12 +580,12 @@ export default class EmojiPickerExtension extends Extension {
      * @param {boolean} forceHide
      */
     #togglePopup(forceHide = false) {
-        log(`emoji-picker: #togglePopup called, forceHide=${forceHide}, popup=${this.#popup ? 'exists' : 'null'}`);
+        console.warn(`emoji-picker: #togglePopup called, forceHide=${forceHide}, popup=${this.#popup ? 'exists' : 'null'}`);
         
         // Handle forceHide
         if (forceHide) {
             if (this.#popup && this.#popup.visible) {
-                log('emoji-picker: Hiding popup (forced)');
+                console.warn('emoji-picker: Hiding popup (forced)');
                 this.#hidePopup();
             }
             return;
@@ -596,10 +593,10 @@ export default class EmojiPickerExtension extends Extension {
 
         // If popup doesn't exist or is hidden, show it
         if (!this.#popup || !this.#popup.visible) {
-            log('emoji-picker: Showing popup');
+            console.warn('emoji-picker: Showing popup');
             this.#showPopup();
         } else {
-            log('emoji-picker: Popup is visible, hiding');
+            console.warn('emoji-picker: Popup is visible, hiding');
             this.#hidePopup();
         }
     }
@@ -608,13 +605,13 @@ export default class EmojiPickerExtension extends Extension {
      * Show popup
      */
     #showPopup() {
-        log('emoji-picker: #showPopup called');
+        console.warn('emoji-picker: #showPopup called');
         if (!this.#popup) {
-            log('emoji-picker: Building popup...');
+            console.warn('emoji-picker: Building popup...');
             this.#buildPopup();
         }
 
-        log('emoji-picker: Showing popup');
+        console.warn('emoji-picker: Showing popup');
         this.#repositionPopup();
         this.#popup.opacity = 0;
         this.#popup.show();
